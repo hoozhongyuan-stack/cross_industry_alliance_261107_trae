@@ -1,0 +1,2146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>邻里集 · 异业联盟商城交互原型</title>
+<style>
+  :root{
+    --paper:#F2ECDF;
+    --paper-2:#FCF9F2;
+    --paper-3:#F7F2E7;
+    --ink:#15241E;
+    --ink-2:#415048;
+    --muted:#82796A;
+    --line:#DCD4C3;
+    --line-2:#C9BFA9;
+    --jade:#17594B;
+    --jade-deep:#0D3B31;
+    --jade-soft:#E4EFE9;
+    --persimmon:#C0502E;
+    --persimmon-soft:#F6E4DC;
+    --mustard:#C79A3E;
+    --mustard-soft:#F6EBD3;
+    --wechat:#07C160;
+    --red:#A83E31;
+    --display:"Songti SC","Noto Serif SC","STSong",serif;
+    --body:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    --mono:"SFMono-Regular","Menlo","Consolas",monospace;
+    --shadow:0 24px 60px -24px rgba(13,59,49,.34);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;font-family:var(--body);color:var(--ink);font-size:14px;line-height:1.55;
+    background:
+      radial-gradient(1100px 620px at 78% -12%,rgba(199,154,62,.13),transparent 55%),
+      radial-gradient(900px 500px at 4% 20%,rgba(23,89,75,.07),transparent 55%),
+      var(--paper);
+    min-height:100vh;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  }
+  button{font-family:inherit;cursor:pointer}
+  input{font-family:inherit}
+  svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ---------- Top bar ---------- */
+  .appbar{
+    position:sticky;top:0;z-index:50;height:74px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 30px;background:linear-gradient(180deg,#0E4036,#0B322A);color:#F7F2E7;
+    border-bottom:1px solid rgba(255,255,255,.10);
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:220px}
+  .brand-mark{
+    width:40px;height:40px;border-radius:11px;background:var(--persimmon);display:grid;place-items:center;
+    font-family:var(--display);font-size:21px;color:#FBF7EC;box-shadow:0 8px 20px rgba(0,0,0,.22)
+  }
+  .brand-copy b{display:block;font-family:var(--display);font-size:19px;letter-spacing:.12em;line-height:1.25}
+  .brand-copy small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:#A9C4B9;margin-top:2px}
+  .role-switch{display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13)}
+  .role-switch button{
+    border:0;background:transparent;color:#C9DCD4;padding:8px 18px;border-radius:999px;
+    font-size:12.5px;letter-spacing:.03em;transition:.2s;
+  }
+  .role-switch button:hover{color:#fff}
+  .role-switch button.on{background:#F7F2E7;color:#0D3B31;font-weight:600;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+  .appbar-right{display:flex;align-items:center;gap:12px;min-width:220px;justify-content:flex-end}
+  .appbar-right .ref{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:#A9C4B9;border:1px solid rgba(255,255,255,.16);padding:4px 9px;border-radius:6px}
+  .reset-btn{background:transparent;border:1px solid rgba(255,255,255,.26);color:#E8EFEA;padding:7px 13px;border-radius:8px;font-size:11.5px;transition:.2s}
+  .reset-btn:hover{background:rgba(255,255,255,.1)}
+
+  /* ---------- Workspace ---------- */
+  .workspace{
+    position:relative;z-index:1;max-width:1580px;margin:0 auto;padding:28px 32px 72px;
+    display:grid;grid-template-columns:206px minmax(0,1fr) 302px;gap:28px;align-items:start;
+  }
+
+  /* ---------- Rail ---------- */
+  .rail{position:sticky;top:100px}
+  .rail-card{background:rgba(252,249,242,.76);border:1px solid var(--line);border-radius:16px;padding:20px 18px;backdrop-filter:blur(8px);box-shadow:0 14px 34px -28px rgba(13,59,49,.4)}
+  .eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--persimmon);text-transform:uppercase}
+  .rail h3{font-family:var(--display);font-size:18px;font-weight:600;line-height:1.42;margin:8px 0 16px;letter-spacing:.02em}
+  .rail-step{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:13px 0;border-top:1px dashed var(--line)}
+  .rail-step .num{
+    width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--mono);font-size:10px;color:var(--muted);background:#EDE7D9;border:1px solid var(--line-2);transition:.25s
+  }
+  .rail-step .t b{display:block;font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.45}
+  .rail-step .t small{display:block;font-size:10px;color:var(--muted);margin-top:2px;line-height:1.5}
+  .rail-step.active .num{background:var(--persimmon);border-color:var(--persimmon);color:#fff;box-shadow:0 0 0 4px rgba(192,80,46,.13)}
+  .rail-step.active .t b{color:var(--persimmon)}
+  .rail-step.done .num{background:var(--jade);border-color:var(--jade);color:#fff}
+  .rail-step.done .t b{color:var(--jade-deep)}
+  .rail-note{font-size:10.5px;color:var(--muted);padding-top:14px;border-top:1px dashed var(--line);line-height:1.65}
+  .rail-note b{color:var(--ink-2)}
+
+  /* ---------- Stage ---------- */
+  .stage{display:flex;flex-direction:column;align-items:center;min-height:820px}
+  .role-panel{display:none;flex-direction:column;align-items:center;width:100%}
+  .role-panel.on{display:flex;animation:panelIn .38s cubic-bezier(.2,.8,.3,1)}
+  @keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .stage-caption{
+    margin-top:12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase
+  }
+
+  /* ---------- Phone ---------- */
+  .phone{
+    width:394px;flex:0 0 auto;padding:11px;border-radius:54px;
+    background:linear-gradient(150deg,#2C3F38,#09130F 62%);
+    box-shadow:0 42px 90px -28px rgba(10,35,29,.55),inset 0 0 0 1px rgba(255,255,255,.13),inset 0 -2px 10px rgba(0,0,0,.3)
+  }
+  .phone-screen{
+    position:relative;height:758px;border-radius:44px;background:var(--paper-2);overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  .statusbar{height:38px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:10.5px;font-weight:600;color:#24332B;position:relative;z-index:3}
+  .statusbar .island{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:94px;height:27px;border-radius:18px;background:#0A1410}
+  .statusbar span:last-child{font-family:var(--mono);font-size:9px;letter-spacing:.02em}
+  .screen{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+  .screen::-webkit-scrollbar{display:none}
+
+  /* ---------- User app ---------- */
+  .u-loc{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 6px}
+  .u-loc .place{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--ink)}
+  .u-loc .place svg{width:14px;height:14px;color:var(--jade)}
+  .u-loc .range{font-size:10px;color:var(--jade);background:var(--jade-soft);border:1px solid #CBE0D5;padding:2px 8px;border-radius:999px}
+  .u-search{
+    margin:6px 20px 12px;height:36px;border-radius:999px;background:#EDE8DA;border:1px solid #E2DAC8;
+    display:flex;align-items:center;gap:8px;padding:0 13px;font-size:11px;color:#948B7B
+  }
+  .u-search svg{width:15px;height:15px;color:#8C8272}
+  .promo{
+    position:relative;margin:0 20px 14px;border-radius:14px;padding:16px 18px;color:#F6F1E6;overflow:hidden;
+    background:
+      radial-gradient(circle at 88% 8%,rgba(255,255,255,.18),transparent 42%),
+      linear-gradient(118deg,#17594B,#0D3B31 78%);
+  }
+  .promo::before,.promo::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:var(--paper-2);left:58%;top:-9px}
+  .promo::after{top:auto;bottom:-9px}
+  .promo .pt{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:.06em}
+  .promo .ps{font-size:10px;color:#BFD6CC;margin-top:3px;letter-spacing:.04em}
+  .promo .perf{position:absolute;right:16px;top:26px;bottom:26px;border-left:1px dashed rgba(255,255,255,.35)}
+  .promo .stub{position:absolute;right:10px;top:50%;transform:translateY(-50%);text-align:center;font-family:var(--mono);font-size:8.5px;color:#F0D9B7;line-height:1.5}
+  .cat-row{display:flex;gap:7px;padding:0 20px 8px;overflow-x:auto;scrollbar-width:none}
+  .cat-row::-webkit-scrollbar{display:none}
+  .cat-pill{flex:0 0 auto;border:1px solid var(--line);background:var(--paper-2);color:var(--ink-2);border-radius:999px;padding:5px 11px;font-size:10.5px}
+  .cat-pill.on{background:var(--ink);border-color:var(--ink);color:#F8F3E7}
+  .section-row{display:flex;align-items:baseline;justify-content:space-between;padding:8px 20px 8px}
+  .section-row b{font-family:var(--display);font-size:15px;letter-spacing:.04em}
+  .section-row small{font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .store-card{
+    display:flex;gap:11px;width:calc(100% - 40px);margin:0 20px 10px;padding:12px;border-radius:12px;
+    background:var(--paper-2);border:1px solid var(--line);text-align:left;transition:.18s;position:relative
+  }
+  .store-card:hover{border-color:var(--line-2);box-shadow:0 10px 24px -20px rgba(13,59,49,.45);transform:translateY(-1px)}
+  .store-thumb{
+    width:62px;height:62px;border-radius:10px;flex:0 0 auto;display:grid;place-items:center;
+    font-family:var(--display);font-size:26px;color:#F9F4E8;
+    background:linear-gradient(145deg,var(--tone-a,#2F6C5C),var(--tone-b,#123D33));
+  }
+  .store-info{flex:1;min-width:0}
+  .store-name-row{display:flex;align-items:center;gap:6px}
+  .store-name-row b{font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .open-badge{font-size:8.5px;color:var(--jade);background:var(--jade-soft);border-radius:3px;padding:1px 5px;flex:0 0 auto}
+  .store-meta{font-size:10px;color:var(--muted);margin:3px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .store-tags{display:flex;gap:4px;flex-wrap:wrap}
+  .tag{font-size:8.5px;padding:1px 5px;border-radius:3px;background:#F3EEE1;color:#756C5C;border:1px solid #E7DFCD}
+  .tag-jade{background:var(--jade-soft);color:var(--jade-deep);border-color:#CBE0D5}
+  .tag-amber{background:var(--mustard-soft);color:#8C6520;border-color:#EBD9B3}
+  .tag-red{background:var(--persimmon-soft);color:var(--persimmon);border-color:#EAD0C5}
+
+  .subpage-head{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 8px}
+  .subpage-head b{font-size:13px;letter-spacing:.04em}
+  .back-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--paper-2);display:grid;place-items:center;font-size:14px;color:var(--ink-2);padding:0}
+  .back-btn:hover{background:#EDE8DA}
+  .head-ghost{width:30px;height:30px;border:0;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11px}
+
+  .store-hero{
+    margin:0 16px;border-radius:14px;padding:18px;color:#F7F2E6;position:relative;overflow:hidden;
+    background:
+      radial-gradient(circle at 85% 10%,rgba(255,255,255,.16),transparent 40%),
+      linear-gradient(125deg,#1C6353,#0D3B31 75%);
+  }
+  .store-hero h2{font-family:var(--display);font-size:22px;margin:0 0 4px;letter-spacing:.05em;font-weight:600}
+  .store-hero .meta{font-size:10.5px;color:#BFD6CC;margin-bottom:10px}
+  .store-hero .tags{display:flex;gap:5px}
+  .store-hero .tags span{font-size:9px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#E8F2EC}
+  .hero-seal{
+    position:absolute;right:18px;top:18px;width:46px;height:46px;border:1.5px solid rgba(246,235,211,.7);
+    border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:11px;color:#F3E2C2;letter-spacing:.1em;line-height:1.2;text-align:center
+  }
+  .content-pad{padding:14px 16px 20px}
+  .product-row{
+    width:100%;display:flex;gap:11px;padding:11px;border:1px solid var(--line);border-radius:12px;
+    background:var(--paper-2);text-align:left;transition:.18s
+  }
+  .product-row:hover{border-color:var(--line-2);transform:translateY(-1px)}
+  .product-thumb{
+    width:74px;height:74px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center;
+    font-family:var(--display);font-size:26px;color:#FBF6E9;background:linear-gradient(145deg,#B56A3C,#7E3E25)
+  }
+  .product-info b{display:block;font-size:12.5px;color:var(--ink)}
+  .product-info .sub{font-size:10px;color:var(--muted);margin:3px 0 9px}
+  .product-price{font-family:var(--mono);font-size:16px;color:var(--persimmon);font-weight:700}
+  .product-price small{font-family:var(--body);font-size:9px;color:var(--muted);font-weight:400;margin-left:4px}
+
+  .product-art{
+    height:268px;display:grid;place-items:center;position:relative;overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 45%,rgba(255,255,255,.18),transparent 45%),
+      linear-gradient(145deg,#A55C35,#6C3520 62%,#442014);
+  }
+  .product-art .char{font-family:var(--display);font-size:118px;color:rgba(251,246,233,.85);line-height:1;transform:translateY(-4px)}
+  .product-art .ring{position:absolute;width:210px;height:210px;border:1px solid rgba(251,246,233,.23);border-radius:50%}
+  .product-art .ring.two{width:270px;height:270px;border-style:dashed;opacity:.6}
+  .product-art .label{position:absolute;left:18px;bottom:14px;font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:#EED9C2}
+  .product-title{font-family:var(--display);font-size:23px;margin:12px 0 2px;font-weight:600;letter-spacing:.03em}
+  .price-line{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .price-line b{font-family:var(--mono);font-size:22px;color:var(--persimmon)}
+  .price-line span{font-size:10px;color:var(--muted)}
+  .desc{font-size:11.5px;color:var(--ink-2);line-height:1.7;margin:0 0 14px}
+  .rule-card{border:1px solid var(--line);border-radius:10px;background:#F8F4E9;padding:11px 12px;font-size:10.5px;color:var(--ink-2)}
+  .rule-line{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dotted var(--line)}
+  .rule-line:last-child{border:0}
+  .rule-line span{color:var(--muted)}
+  .rule-line b{font-weight:500;text-align:right}
+
+  .fixed-bar{
+    position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 16px 18px;background:rgba(252,249,242,.96);border-top:1px solid var(--line);backdrop-filter:blur(8px);z-index:4
+  }
+  .fixed-bar .total{font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .fixed-bar .total b{display:block;font-size:18px;color:var(--persimmon);line-height:1.3}
+  .primary-btn{border:0;border-radius:9px;background:var(--ink);color:#F7F2E7;padding:10px 18px;font-size:12.5px;letter-spacing:.03em;transition:.18s}
+  .primary-btn:hover{background:#22382F}
+  .primary-btn:disabled{opacity:.4;cursor:not-allowed}
+  .wechat-btn{border:0;border-radius:9px;background:var(--wechat);color:#fff;padding:11px 18px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .wechat-btn:hover{background:#06AE55}
+  .wechat-btn:disabled{background:#9BCDB2;cursor:not-allowed}
+
+  .form-block{margin:16px 0 6px}
+  .form-block label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--muted);margin-bottom:7px;text-transform:uppercase}
+  .slot-row{display:flex;gap:7px;flex-wrap:wrap}
+  .slot{border:1px solid var(--line);background:var(--paper-2);border-radius:8px;padding:8px 13px;font-family:var(--mono);font-size:11px;color:var(--ink-2);transition:.16s}
+  .slot:hover{border-color:var(--line-2)}
+  .slot.on{background:var(--ink);border-color:var(--ink);color:#F8F3E7}
+  .input-fake{border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:11px;color:var(--ink-2);background:#F8F4E9}
+  .checkout-store{display:flex;align-items:center;gap:8px;padding:0 0 12px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--ink-2)}
+  .checkout-store svg{width:14px;height:14px;color:var(--jade)}
+  .checkout-item{display:flex;gap:11px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .checkout-item .thumb{width:58px;height:58px;border-radius:8px;background:linear-gradient(145deg,#B56A3C,#7E3E25);display:grid;place-items:center;font-family:var(--display);color:#FBF6E9;font-size:21px;flex:0 0 auto}
+  .checkout-item .info{flex:1;font-size:11.5px}
+  .checkout-item .info b{display:block;margin-bottom:3px}
+  .checkout-item .info small{color:var(--muted);font-size:9.5px}
+  .checkout-item .amt{font-family:var(--mono);font-size:12px;color:var(--persimmon)}
+  .bill{padding:10px 0 2px}
+  .bill-line{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);padding:4px 0}
+  .bill-line b{font-family:var(--mono);color:var(--ink-2);font-weight:500}
+  .bill-line.total{color:var(--ink);font-size:12px;padding-top:8px}
+  .bill-line.total b{font-size:15px;color:var(--persimmon);font-weight:700}
+
+  .pay-overlay{
+    position:absolute;inset:0;background:rgba(13,32,26,.55);backdrop-filter:blur(3px);z-index:8;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#F7F2E7
+  }
+  .spinner{width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.25);border-top-color:#F5D7A6;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .pay-overlay b{font-family:var(--display);font-size:17px;letter-spacing:.08em}
+  .pay-overlay small{font-family:var(--mono);font-size:9px;color:#C9DCD4;letter-spacing:.1em}
+
+  .success-screen{padding:42px 22px 26px;text-align:center;display:flex;flex-direction:column;align-items:center;min-height:100%}
+  .stamp{
+    width:132px;height:132px;border-radius:50%;border:3px double var(--jade);color:var(--jade);
+    display:grid;place-items:center;font-family:var(--display);font-size:21px;letter-spacing:.14em;
+    transform:rotate(-9deg);animation:stampIn .55s cubic-bezier(.2,1.5,.4,1);position:relative
+  }
+  .stamp::before{content:"";position:absolute;inset:8px;border:1px solid rgba(23,89,75,.35);border-radius:50%}
+  @keyframes stampIn{0%{transform:scale(1.7) rotate(-18deg);opacity:0}70%{transform:scale(.96) rotate(-7deg);opacity:1}100%{transform:scale(1) rotate(-9deg)}}
+  .success-screen h2{font-family:var(--display);font-size:21px;margin:22px 0 4px;font-weight:600}
+  .success-screen p{font-size:11px;color:var(--muted);margin:0 0 18px}
+  .success-receipt{width:100%;border:1px solid var(--line);border-radius:12px;background:#F8F4E9;padding:14px 16px;text-align:left;font-size:11px;margin-bottom:20px}
+  .success-receipt .r{display:flex;justify-content:space-between;padding:4px 0;color:var(--muted)}
+  .success-receipt .r b{font-family:var(--mono);color:var(--ink-2);font-weight:500}
+  .success-screen .primary-btn{width:100%;margin-bottom:8px}
+  .text-btn{border:0;background:transparent;color:var(--jade);font-size:11.5px;padding:8px;text-decoration:underline;text-underline-offset:3px}
+
+  .order-top{padding:4px 20px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#F3EDDF,#FCF9F2)}
+  .order-top .label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--muted)}
+  .status-big{font-family:var(--display);font-size:26px;color:var(--jade-deep);margin-top:2px}
+  .order-top p{font-size:11px;color:var(--muted);margin:2px 0 0}
+  .order-ticket{margin:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper-2);overflow:hidden;position:relative}
+  .ticket-head{padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed var(--line)}
+  .ticket-head b{font-size:11.5px}
+  .ticket-head small{font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .qr-wrap{padding:20px 0 10px;display:flex;justify-content:center;position:relative}
+  .qr{width:150px;height:150px;padding:9px;background:#fff;border:1px solid var(--line);display:grid;grid-template-columns:repeat(21,1fr);grid-template-rows:repeat(21,1fr);gap:0}
+  .qr i{display:block}
+  .qr i.on{background:#14241D}
+  .code{text-align:center;font-family:var(--mono);font-size:20px;letter-spacing:.18em;color:var(--ink);margin:2px 0 4px}
+  .code-tip{text-align:center;font-size:10px;color:var(--muted);padding-bottom:14px}
+  .ticket-divider{border-top:1px dashed var(--line);position:relative}
+  .ticket-divider::before,.ticket-divider::after{content:"";position:absolute;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--paper-2);border:1px solid var(--line)}
+  .ticket-divider::before{left:-9px}.ticket-divider::after{right:-9px}
+  .ticket-info{padding:12px 14px 14px;font-size:10.5px}
+  .ticket-info .r{display:flex;justify-content:space-between;padding:3px 0;color:var(--muted)}
+  .ticket-info .r b{font-family:var(--mono);color:var(--ink-2);font-weight:500}
+  .ticket-wait{padding:38px 16px;text-align:center;font-size:11px;color:var(--muted)} 
+  .ticket-stamp{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-13deg) scale(.7);opacity:0;
+    border:2px solid var(--jade);color:var(--jade);border-radius:8px;padding:5px 14px;font-family:var(--display);
+    font-size:17px;letter-spacing:.18em;background:rgba(252,249,242,.85);transition:.3s
+  }
+  .ticket-stamp.show{opacity:1;transform:translate(-50%,-50%) rotate(-13deg) scale(1)}
+  .timeline{margin:0 16px 16px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#F8F4E9}
+  .tl-item{display:flex;gap:10px;padding:6px 0;font-size:10.5px;color:var(--muted);position:relative}
+  .tl-item .dot{width:8px;height:8px;border-radius:50%;background:#D8D0BF;flex:0 0 auto;margin-top:4px}
+  .tl-item.done{color:var(--ink-2)}
+  .tl-item.done .dot{background:var(--jade)}
+  .tl-item b{font-weight:500}
+  .tl-item small{display:block;font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .order-actions{display:flex;gap:8px;padding:0 16px 20px}
+  .ghost-btn{border:1px solid var(--line-2);background:var(--paper-2);border-radius:8px;padding:8px 12px;font-size:10.5px;color:var(--ink-2)}
+  .ghost-btn:hover{background:#EFEADF}
+
+  .profile{padding:26px 20px}
+  .profile-top{display:flex;align-items:center;gap:13px;margin-bottom:20px}
+  .avatar{width:58px;height:58px;border-radius:50%;background:linear-gradient(145deg,#C88B4A,#8E5328);display:grid;place-items:center;font-family:var(--display);font-size:24px;color:#FBF6E9;border:2px solid #E9DCC5}
+  .profile-top b{font-family:var(--display);font-size:18px;display:block}
+  .profile-top small{font-size:9.5px;color:var(--muted);font-family:var(--mono);letter-spacing:.08em}
+  .menu-row{display:flex;justify-content:space-between;align-items:center;padding:13px 2px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--ink-2)}
+  .menu-row span:last-child{font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+  /* ---------- Tabbar ---------- */
+  .tabbar{
+    flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:7px 10px 15px;
+    background:rgba(252,249,242,.97);border-top:1px solid var(--line);backdrop-filter:blur(8px)
+  }
+  .tabbar button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:#8E8575;font-size:9.5px;padding:4px 0;border-radius:8px}
+  .tabbar button svg{width:18px;height:18px}
+  .tabbar button.on{color:var(--jade-deep);font-weight:600}
+  .tabbar button.on::after{content:"";width:14px;height:2px;border-radius:2px;background:var(--persimmon);margin-top:1px}
+
+  /* ---------- Merchant ---------- */
+  .m-head{padding:10px 20px 16px;background:linear-gradient(135deg,#17594B,#0D3B31);color:#F5F0E4;position:relative;overflow:hidden}
+  .m-head::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border:1px solid rgba(255,255,255,.14);border-radius:50%}
+  .m-head .top{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#BFD6CC}
+  .m-head .top b{font-family:var(--display);font-size:14px;color:#F7F2E6;letter-spacing:.04em}
+  .m-head h2{font-family:var(--display);font-size:20px;margin:10px 0 2px;letter-spacing:.04em;font-weight:600}
+  .m-head small{font-size:10px;color:#BED5CB}
+  .m-body{padding:14px 16px 20px}
+  .m-revenue{display:grid;grid-template-columns:1.2fr .8fr;gap:8px;margin-bottom:12px}
+  .m-kpi{background:var(--paper-2);border:1px solid var(--line);border-radius:11px;padding:11px 12px}
+  .m-kpi small{display:block;font-size:9px;color:var(--muted);font-family:var(--mono);letter-spacing:.08em}
+  .m-kpi b{display:block;font-family:var(--display);font-size:23px;color:var(--jade-deep);line-height:1.3}
+  .m-kpi .unit{font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .m-kpi.warn b{color:var(--persimmon)}
+  .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:16px}
+  .quick-btn{border:1px solid var(--line);background:var(--paper-2);border-radius:10px;padding:10px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:9.5px;color:var(--ink-2);transition:.18s}
+  .quick-btn:hover{background:#F3EEE1;transform:translateY(-1px)}
+  .quick-btn svg{width:19px;height:19px;color:var(--jade)}
+  .m-section{display:flex;justify-content:space-between;align-items:baseline;margin:4px 0 8px}
+  .m-section b{font-family:var(--display);font-size:15px}
+  .m-section small{font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .m-order{border:1px solid var(--line);background:var(--paper-2);border-radius:12px;padding:12px;margin-bottom:9px}
+  .m-order-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+  .m-order-top .no{font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .status-pill{font-size:9px;padding:2px 7px;border-radius:999px;background:var(--jade-soft);color:var(--jade-deep);border:1px solid #CBE0D5}
+  .status-pill.amber{background:var(--mustard-soft);color:#8C6520;border-color:#EBD9B3}
+  .status-pill.red{background:var(--persimmon-soft);color:var(--persimmon);border-color:#EAD0C5}
+  .status-pill.grey{background:#ECE7DB;color:var(--muted);border-color:var(--line)}
+  .m-order-body{display:flex;gap:9px;align-items:center}
+  .m-order-thumb{width:44px;height:44px;border-radius:8px;background:linear-gradient(145deg,#B56A3C,#7E3E25);display:grid;place-items:center;color:#FBF6E9;font-family:var(--display);font-size:16px;flex:0 0 auto}
+  .m-order-info{flex:1;font-size:10.5px;color:var(--muted)}
+  .m-order-info b{display:block;color:var(--ink);font-size:11.5px;margin-bottom:2px}
+  .m-order-info .amt{font-family:var(--mono);color:var(--persimmon);font-size:11px}
+  .m-actions{display:flex;gap:6px;margin-top:10px}
+  .m-btn{border:0;background:var(--ink);color:#F7F2E7;border-radius:7px;padding:7px 12px;font-size:10.5px}
+  .m-btn:hover{background:#22382F}
+  .m-btn.light{background:transparent;border:1px solid var(--line-2);color:var(--ink-2)}
+  .m-empty{border:1px dashed var(--line-2);border-radius:11px;padding:22px 12px;text-align:center;font-size:10.5px;color:var(--muted);background:#F9F5EB}
+
+  .scanner{
+    height:240px;border-radius:14px;background:linear-gradient(150deg,#10251F,#08130F);position:relative;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;color:#DDEBE4;margin-bottom:14px
+  }
+  .scanner .corner{position:absolute;width:34px;height:34px;border:2px solid rgba(199,154,62,.85)}
+  .scanner .c1{left:22px;top:22px;border-right:0;border-bottom:0}
+  .scanner .c2{right:22px;top:22px;border-left:0;border-bottom:0}
+  .scanner .c3{left:22px;bottom:22px;border-right:0;border-top:0}
+  .scanner .c4{right:22px;bottom:22px;border-left:0;border-top:0}
+  .laser{position:absolute;left:28px;right:28px;height:2px;background:linear-gradient(90deg,transparent,#D3A754,transparent);box-shadow:0 0 12px rgba(211,167,84,.7);animation:scan 2.2s ease-in-out infinite}
+  @keyframes scan{0%,100%{top:28%;opacity:.3}50%{top:70%;opacity:1}}
+  .scanner b{font-family:var(--display);font-size:16px;letter-spacing:.1em;position:relative;z-index:1}
+  .scanner small{font-family:var(--mono);font-size:9px;color:#8FAA9E;letter-spacing:.12em;margin-top:5px;position:relative;z-index:1}
+  .verify-form{background:var(--paper-2);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .code-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--muted);display:block;margin-bottom:6px}
+  .code-input{width:100%;border:1px solid var(--line-2);border-radius:8px;background:#F8F4E9;padding:10px 12px;font-family:var(--mono);font-size:15px;letter-spacing:.12em;color:var(--ink);margin-bottom:9px}
+  .code-input:focus{outline:2px solid rgba(23,89,75,.18);border-color:var(--jade)}
+  .verify-actions{display:flex;gap:7px}
+  .verify-actions .m-btn{flex:1}
+  .fill-btn{border:0;background:transparent;color:var(--jade);font-size:10px;text-decoration:underline;text-underline-offset:3px;margin-bottom:10px;padding:0}
+  .verify-result{margin-top:13px;border:1px solid #CBE0D5;background:var(--jade-soft);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;animation:panelIn .3s}
+  .verify-result .seal{width:42px;height:42px;border:2px solid var(--jade);border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:13px;color:var(--jade);transform:rotate(-8deg);flex:0 0 auto}
+  .verify-result b{display:block;font-size:12px;color:var(--jade-deep)}
+  .verify-result small{font-size:9.5px;color:var(--muted)}
+
+  .balance-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}
+  .balance-card{background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .balance-card small{display:block;font-size:8.5px;color:var(--muted);margin-bottom:3px}
+  .balance-card b{font-family:var(--mono);font-size:16px;color:var(--jade-deep)}
+  .balance-card.hl b{color:var(--persimmon)}
+  .settle-card{background:linear-gradient(135deg,#17594B,#0D3B31);border-radius:12px;padding:14px;color:#F6F1E6;margin-bottom:14px}
+  .settle-card small{font-size:9.5px;color:#BFD6CC;display:block}
+  .settle-card b{font-family:var(--display);font-size:20px;letter-spacing:.04em;display:block;margin:3px 0 9px}
+  .settle-card .row{display:flex;justify-content:space-between;align-items:center}
+  .settle-card .btn{border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.1);color:#F6F1E6;border-radius:7px;padding:7px 13px;font-size:10.5px}
+  .settle-card .btn:hover{background:rgba(255,255,255,.18)}
+  .settle-status{font-family:var(--mono);font-size:10px;color:#F1D7A9}
+  .ledger{border:1px solid var(--line);border-radius:11px;background:var(--paper-2);padding:10px 12px}
+  .ledger-head{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:6px}
+  .ledger-row{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);padding:6px 0;border-bottom:1px dotted var(--line)}
+  .ledger-row:last-child{border:0}
+  .ledger-row b{font-family:var(--mono);font-weight:500;color:var(--ink-2)}
+  .ledger-row .minus{color:var(--persimmon)}
+  .m-note{font-size:9.5px;color:var(--muted);line-height:1.6;margin-top:10px}
+
+  /* ---------- Platform ---------- */
+  .pc{
+    width:100%;max-width:1000px;background:var(--paper-2);border:1px solid var(--line-2);border-radius:14px;overflow:hidden;
+    box-shadow:0 36px 90px -34px rgba(13,59,49,.6)
+  }
+  .pc-bar{height:38px;background:#E7DFD0;display:flex;align-items:center;gap:6px;padding:0 14px;border-bottom:1px solid var(--line)}
+  .pc-bar i{width:8px;height:8px;border-radius:50%;background:#BDB3A0}
+  .pc-bar .url{margin-left:10px;flex:1;background:#F4EFE3;border:1px solid #DED6C4;border-radius:5px;padding:3px 10px;font-family:var(--mono);font-size:9px;color:#8A8171}
+  .pc-body{display:grid;grid-template-columns:176px minmax(0,1fr);height:720px}
+  .pc-side{background:var(--jade-deep);padding:18px 11px;display:flex;flex-direction:column;gap:3px;color:#C9DCD4}
+  .pc-brand{padding:0 9px 16px;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.1)}
+  .pc-brand b{display:block;font-family:var(--display);font-size:14px;color:#F7F2E6;letter-spacing:.1em}
+  .pc-brand small{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.14em;color:#8FAA9E;margin-top:3px}
+  .pc-navbtn{border:0;background:transparent;color:#BFD5CB;text-align:left;padding:8px 9px;border-radius:6px;font-size:11px;display:flex;justify-content:space-between;align-items:center;transition:.16s}
+  .pc-navbtn:hover{background:rgba(255,255,255,.06);color:#fff}
+  .pc-navbtn.on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+  .pc-navbtn em{font-style:normal;font-family:var(--mono);font-size:8.5px;color:#E3C48E;background:rgba(227,196,142,.12);padding:1px 5px;border-radius:4px}
+  .pc-user{margin-top:auto;padding:11px 9px 2px;border-top:1px solid rgba(255,255,255,.1);font-size:9.5px;color:#8FAA9E;display:flex;align-items:center;gap:7px}
+  .pc-user i{width:22px;height:22px;border-radius:50%;background:#C79A3E;display:grid;place-items:center;font-style:normal;font-size:9px;color:#0D3B31;font-weight:700}
+  .pc-main{padding:18px 20px;overflow-y:auto;background:var(--paper-2)}
+  .pc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+  .pc-head .eyebrow{margin-bottom:3px}
+  .pc-head h1{font-family:var(--display);font-size:23px;font-weight:600;margin:0;letter-spacing:.04em}
+  .pc-date{font-family:var(--mono);font-size:9px;color:var(--muted);border:1px solid var(--line);padding:4px 8px;border-radius:5px}
+  .pc-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}
+  .pc-kpi{background:#F8F4E9;border:1px solid var(--line);border-radius:9px;padding:10px 11px}
+  .pc-kpi small{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;color:var(--muted)}
+  .pc-kpi b{display:block;font-family:var(--display);font-size:21px;color:var(--jade-deep);line-height:1.35}
+  .pc-kpi span{font-family:var(--mono);font-size:8.5px;color:var(--muted)}
+  .pc-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:10px}
+  .pc-panel{background:#FBF7EE;border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+  .pc-panel.wide{grid-column:1/-1;margin-top:10px}
+  .panel-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .panel-head b{font-size:11.5px;color:var(--ink)}
+  .panel-head small{font-family:var(--mono);font-size:8.5px;color:var(--muted)}
+  .todo-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:10.5px;color:var(--ink-2)}
+  .todo-row:last-child{border:0}
+  .todo-row button{border:0;background:transparent;padding:0;color:var(--ink-2);font-size:10.5px;text-align:left}
+  .todo-row em{font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--persimmon)}
+  .todo-row em.zero{color:var(--muted)}
+  .chart{display:flex;align-items:flex-end;gap:5px;height:96px;padding:6px 2px 0}
+  .chart div{flex:1;background:linear-gradient(180deg,#3C8A75,#17594B);border-radius:3px 3px 0 0;opacity:.9;min-height:6%}
+  .chart-x{display:flex;gap:5px;margin-top:4px;font-family:var(--mono);font-size:7.5px;color:#A39A8A}
+  .chart-x div{flex:1;text-align:center}
+  .feed{display:flex;flex-direction:column;gap:6px}
+  .feed-row{display:flex;gap:8px;font-size:10px;color:var(--ink-2);padding:5px 0;border-bottom:1px dotted var(--line)}
+  .feed-row:last-child{border:0}
+  .feed-row .t{font-family:var(--mono);font-size:8.5px;color:var(--muted);flex:0 0 34px}
+  .feed-row b{font-weight:600}
+  .pc-table{width:100%;border-collapse:collapse;font-size:10.5px}
+  .pc-table th{text-align:left;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line);font-weight:500}
+  .pc-table td{padding:9px 8px;border-bottom:1px dotted var(--line);color:var(--ink-2)}
+  .pc-table td b{color:var(--ink)}
+  .pc-table .money{font-family:var(--mono);font-size:10px}
+  .table-action{border:1px solid var(--line-2);background:#FDFAF3;border-radius:5px;padding:4px 8px;font-size:9.5px;color:var(--ink-2)}
+  .table-action:hover{background:#F3EBDD}
+  .table-action.primary{border-color:var(--jade);background:var(--jade);color:#F7F2E6}
+  .audit-card{background:#FBF7EE;border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin-bottom:9px;position:relative}
+  .audit-card .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+  .audit-card .type{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--persimmon);margin-bottom:2px}
+  .audit-card b{font-size:12px;display:block}
+  .audit-card .meta{font-size:9.5px;color:var(--muted);margin:2px 0 7px}
+  .doc-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+  .doc-chips span{font-size:8.5px;border:1px solid var(--line);border-radius:4px;padding:2px 6px;color:var(--ink-2);background:#F8F4E9}
+  .audit-btns{display:flex;gap:6px}
+  .audit-btns button{border:1px solid var(--line-2);background:transparent;border-radius:6px;padding:5px 10px;font-size:9.5px;color:var(--ink-2)}
+  .audit-btns button.ok{background:var(--jade);border-color:var(--jade);color:#F7F2E6}
+  .audit-btns button.no{color:var(--persimmon);border-color:#DDBBAF}
+  .audit-stamp{position:absolute;right:14px;bottom:12px;font-family:var(--display);font-size:14px;letter-spacing:.12em;border:1.5px solid currentColor;border-radius:6px;padding:3px 9px;transform:rotate(-7deg);opacity:.9}
+  .audit-stamp.ok{color:var(--jade)}
+  .audit-stamp.no{color:var(--persimmon)}
+  .case-card{background:#FBF7EE;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px}
+  .case-card .top{display:flex;justify-content:space-between;gap:10px}
+  .case-card h3{font-family:var(--display);font-size:17px;margin:2px 0 4px;font-weight:600}
+  .case-card .meta{font-size:9.5px;color:var(--muted);line-height:1.7}
+  .case-amount{font-family:var(--mono);font-size:22px;color:var(--persimmon)}
+  .evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:11px 0}
+  .evidence{height:72px;border-radius:7px;border:1px solid var(--line);display:flex;align-items:flex-end;padding:6px;font-size:8px;color:#F7F2E6;font-family:var(--mono);letter-spacing:.05em;background:linear-gradient(145deg,#B9A98C,#8C7D67)}
+  .evidence.e2{background:linear-gradient(145deg,#8FA99D,#5F7C71)}
+  .evidence.e3{background:linear-gradient(145deg,#C9A67A,#9A7048)}
+  .decision-btns{display:flex;gap:7px;flex-wrap:wrap}
+  .decision-btns button{border:1px solid var(--line-2);background:#FDFAF3;border-radius:6px;padding:6px 12px;font-size:10px;color:var(--ink-2)}
+  .decision-btns button.primary{background:var(--jade);border-color:var(--jade);color:#F7F2E6}
+  .decision-btns button.danger{background:var(--persimmon);border-color:var(--persimmon);color:#FBF6E9}
+  .case-result{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--jade-soft);border:1px solid #CBE0D5;font-size:10.5px;color:var(--jade-deep);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .case-result b{font-family:var(--display);font-size:13px}
+  .settle-panel{background:#FBF7EE;border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:10px}
+  .settle-panel .panel-head{margin-bottom:7px}
+  .payout-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:10.5px}
+  .payout-row:last-child{border:0}
+  .payout-row .amt{font-family:var(--mono);color:var(--persimmon)}
+  .empty-state{padding:40px 20px;text-align:center;border:1px dashed var(--line-2);border-radius:10px;background:#F9F5EB;color:var(--muted);font-size:11px}
+  .empty-state b{display:block;font-family:var(--display);font-size:16px;color:var(--ink-2);margin-bottom:4px}
+  .pc-note{font-size:9.5px;color:var(--muted);margin-top:9px;line-height:1.6}
+
+  /* ---------- Admin extensions ---------- */
+  .pc{position:relative}
+  .pc-group{font-family:var(--mono);font-size:7.5px;letter-spacing:.14em;color:#6F8D80;padding:9px 9px 3px;text-transform:uppercase}
+  .pc-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .filter-group{display:flex;gap:5px;flex-wrap:wrap}
+  .filter-chip{border:1px solid var(--line);background:#FBF7EE;border-radius:999px;padding:4px 10px;font-size:9.5px;color:var(--ink-2)}
+  .filter-chip:hover{background:#F4EDDF}
+  .filter-chip.on{background:var(--ink);border-color:var(--ink);color:#F6F1E6}
+  .filter-chip em{font-style:normal;font-family:var(--mono);font-size:8px;color:var(--muted);margin-left:4px}
+  .filter-chip.on em{color:#C9DCD4}
+  .pc-btn{border:1px solid var(--line-2);background:#FDFAF3;border-radius:6px;padding:5px 10px;font-size:9.5px;color:var(--ink-2)}
+  .pc-btn:hover{background:#F3EBDD}
+  .pc-btn.primary{background:var(--jade);border-color:var(--jade);color:#F7F2E6}
+  .pc-btn.danger{color:var(--persimmon);border-color:#DDBBAF}
+  .metric-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:11px}
+  .metric-mini{background:#F8F4E9;border:1px dashed var(--line);border-radius:8px;padding:8px 10px;font-size:8.5px;color:var(--muted);font-family:var(--mono);letter-spacing:.05em}
+  .metric-mini b{display:block;font-size:13px;color:var(--ink-2);margin-top:2px}
+  .alert-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .alert-card{border:1px solid #E3C6BB;background:#FBEFE9;border-radius:8px;padding:9px 11px;font-size:9.5px;color:#8A4B36;display:flex;align-items:center;gap:9px}
+  .alert-card b{font-family:var(--mono);font-size:15px;color:var(--persimmon)}
+  .alert-card.ok{border-color:#CBE0D5;background:var(--jade-soft);color:var(--jade-deep)}
+  .alert-card.ok b{color:var(--jade)}
+  .admin-table{width:100%;border-collapse:collapse;font-size:10.5px}
+  .admin-table th{text-align:left;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line);font-weight:500;white-space:nowrap}
+  .admin-table td{padding:8px 8px;border-bottom:1px dotted var(--line);color:var(--ink-2);vertical-align:middle}
+  .admin-table tr:hover td{background:#F9F4E7}
+  .admin-table td b{color:var(--ink)}
+  .admin-table .sub{display:block;font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:2px}
+  .admin-table .money{font-family:var(--mono);font-size:10px;text-align:right}
+  .row-actions{display:flex;gap:4px;flex-wrap:wrap}
+  .mini-action{border:1px solid var(--line);background:#FDFAF3;border-radius:4px;padding:2px 6px;font-size:8.5px;color:var(--ink-2);white-space:nowrap}
+  .mini-action:hover{background:#F2E9D9}
+  .mini-action.warn{color:var(--persimmon);border-color:#E3C6BB}
+  .mini-action.ok{color:var(--jade);border-color:#BFD7CC}
+  .table-empty{padding:28px 12px;text-align:center;font-size:10px;color:var(--muted);border:1px dashed var(--line-2);border-radius:8px;background:#F9F5EB}
+  .pc-overlay{position:absolute;inset:0;background:rgba(13,32,26,.28);backdrop-filter:blur(1px);z-index:8;animation:panelIn .2s}
+  .pc-drawer{position:absolute;top:0;right:0;bottom:0;width:420px;background:#FBF8F1;border-left:1px solid var(--line-2);z-index:9;display:flex;flex-direction:column;box-shadow:-24px 0 50px rgba(13,32,26,.16);animation:drawerIn .28s cubic-bezier(.2,.8,.3,1)}
+  @keyframes drawerIn{from{transform:translateX(34px);opacity:0}to{transform:none;opacity:1}}
+  .drawer-head{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;border-bottom:1px solid var(--line);background:var(--paper-3)}
+  .drawer-head b{font-family:var(--display);font-size:15px;letter-spacing:.03em}
+  .drawer-close{border:0;background:transparent;color:var(--muted);font-size:17px;line-height:1;padding:3px 6px}
+  .drawer-body{padding:13px 15px 18px;overflow-y:auto;flex:1}
+  .drawer-section{margin-bottom:13px}
+  .drawer-section .t{font-family:var(--mono);font-size:8px;letter-spacing:.12em;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:7px}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px}
+  .detail-item{font-size:9px;color:var(--muted)}
+  .detail-item b{display:block;font-size:10.5px;color:var(--ink-2);font-weight:500;margin-top:1px}
+  .drawer-actions{display:flex;gap:6px;flex-wrap:wrap;padding-top:9px;border-top:1px dashed var(--line)}
+  .pc-tabs{display:flex;gap:3px;background:#EDE6D7;padding:3px;border-radius:8px;width:fit-content;margin-bottom:11px}
+  .pc-tabs button{border:0;background:transparent;border-radius:6px;padding:5px 12px;font-size:9.5px;color:var(--ink-2)}
+  .pc-tabs button.on{background:#FBF8F1;color:var(--jade-deep);font-weight:600;box-shadow:0 2px 6px rgba(13,59,32,.09)}
+  .review-points{display:flex;gap:4px;flex-wrap:wrap;margin:5px 0 8px}
+  .review-points span{font-size:8px;padding:1px 5px;border-radius:3px;background:#EDF3EF;color:var(--jade);border:1px solid #CFE2D6}
+  .rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .rule-section{background:#FBF7EE;border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:9px}
+  .rule-section .t{font-size:11px;font-weight:600;color:var(--ink);margin-bottom:2px}
+  .rule-section .d{font-size:8.5px;color:var(--muted);margin-bottom:7px}
+  .rule-field{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dotted var(--line)}
+  .rule-field:last-child{border:0}
+  .rule-field label{font-size:9.5px;color:var(--ink-2)}
+  .rule-input-wrap{display:flex;align-items:center;gap:4px}
+  .rule-input{width:58px;border:1px solid var(--line-2);border-radius:5px;background:#fff;padding:3px 5px;font-family:var(--mono);font-size:9.5px;text-align:right;color:var(--ink)}
+  .rule-input:focus{outline:2px solid rgba(23,89,75,.15);border-color:var(--jade)}
+  .rule-unit{font-family:var(--mono);font-size:8px;color:var(--muted)}
+  .switch{position:relative;width:28px;height:16px;flex:0 0 auto}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch span{position:absolute;inset:0;background:#D8D0BF;border-radius:999px;transition:.2s}
+  .switch span::after{content:"";position:absolute;width:12px;height:12px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + span{background:var(--jade)}
+  .switch input:checked + span::after{transform:translateX(12px)}
+  .rule-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px}
+  .version-chip{font-family:var(--mono);font-size:8.5px;color:var(--jade-deep);background:var(--jade-soft);border:1px solid #CBE0D5;padding:3px 8px;border-radius:999px}
+  .period-row{display:flex;gap:4px}
+  .share-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:9.5px;color:var(--ink-2)}
+  .share-row span{width:52px;flex:0 0 auto}
+  .share-track{flex:1;height:7px;background:#EDE6D7;border-radius:4px;overflow:hidden}
+  .share-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#2F7A67,#17594B)}
+  .share-row em{font-style:normal;font-family:var(--mono);font-size:8.5px;color:var(--muted);width:32px;text-align:right}
+  .user-cell{display:flex;align-items:center;gap:7px}
+  .user-avatar{width:24px;height:24px;border-radius:50%;background:#E8DCC6;display:grid;place-items:center;font-size:10px;color:#6B5A3C;flex:0 0 auto}
+  .content-row{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#FBF7EE;font-size:10.5px}
+  .content-row small{display:block;font-size:8.5px;color:var(--muted);margin-top:1px}
+  .content-row .right{display:flex;align-items:center;gap:8px}
+  .type-pill{font-size:8.5px;padding:1px 6px;border-radius:3px;background:#ECE7DB;color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+  .type-pill.trade{background:#E8F1EC;color:var(--jade);border-color:#CBE0D5}
+  .type-pill.fund{background:#F6EBD3;color:#8C6520;border-color:#EBD9B3}
+  .type-pill.audit{background:#E9EEF5;color:#3F6386;border-color:#D2DDE9}
+  .type-pill.rule{background:#F6E4DC;color:var(--persimmon);border-color:#EAD0C5}
+  .case-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:9px}
+  .case-list{background:#FBF7EE;border:1px solid var(--line);border-radius:10px;padding:8px}
+  .case-list-item{width:100%;text-align:left;border:0;background:transparent;border-bottom:1px dashed var(--line);padding:9px 7px;border-radius:6px}
+  .case-list-item:last-child{border-bottom:0}
+  .case-list-item:hover{background:#F5EEDF}
+  .case-list-item.on{background:var(--jade-soft)}
+  .case-list-item b{display:block;font-size:10.5px;color:var(--ink);margin-bottom:2px}
+  .case-list-item small{display:block;font-family:var(--mono);font-size:8px;color:var(--muted)}
+  .case-list-item .row{display:flex;justify-content:space-between;align-items:center;gap:5px}
+  .case-detail{background:#FBF7EE;border:1px solid var(--line);border-radius:10px;padding:13px}
+  .case-detail h3{font-family:var(--display);font-size:17px;margin:2px 0 3px;font-weight:600}
+  .case-detail .meta{font-size:9.5px;color:var(--muted);line-height:1.7}
+  .case-detail .amount{font-family:var(--mono);font-size:21px;color:var(--persimmon);text-align:right}
+  .donut-wrap{display:flex;align-items:center;gap:14px}
+  .donut{width:108px;height:108px;border-radius:50%;background:conic-gradient(var(--jade) 0 38%,#3C8A75 38% 60%,#C79A3E 60% 78%,#C0502E 78% 90%,#8C7D67 90% 100%);position:relative;flex:0 0 auto}
+  .donut::after{content:"GMV";position:absolute;inset:22px;background:#FBF7EE;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:8px;color:var(--muted)}
+  .donut-legend{display:flex;flex-direction:column;gap:4px;font-size:8.5px;color:var(--ink-2)}
+  .donut-legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+  .log-alert{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+
+  /* ---------- Inspector ---------- */
+  .inspector{position:sticky;top:100px;background:var(--paper-2);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 22px 50px -34px rgba(13,59,49,.5)}
+  .insp-head{background:var(--ink);color:#F3EEE2;padding:13px 16px;display:flex;justify-content:space-between;align-items:center}
+  .insp-head b{font-family:var(--display);font-size:14px;letter-spacing:.08em}
+  .insp-head span{font-family:var(--mono);font-size:8.5px;color:#A9BDB4;letter-spacing:.12em}
+  .insp-body{padding:14px 15px 16px}
+  .hint{border-left:2px solid var(--persimmon);padding:2px 0 2px 11px;margin-bottom:15px}
+  .hint .lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--persimmon);display:block;margin-bottom:3px}
+  .hint p{font-size:11px;color:var(--ink-2);line-height:1.65;margin:0 0 8px}
+  .hint button{border:0;background:var(--ink);color:#F6F1E6;border-radius:6px;padding:6px 10px;font-size:9.5px}
+  .hint button:hover{background:#22382F}
+  .insp-block{margin-bottom:14px}
+  .insp-block .title{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .insp-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:10px;color:var(--muted);border-bottom:1px dotted var(--line)}
+  .insp-row:last-child{border:0}
+  .insp-row b{font-family:var(--mono);font-size:10px;color:var(--ink-2);font-weight:500;text-align:right}
+  .insp-row b.hot{color:var(--persimmon)}
+  .insp-foot{font-size:9px;color:var(--muted);line-height:1.6;border-top:1px dashed var(--line);padding-top:10px}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:30px;transform:translate(-50%,20px);z-index:80;opacity:0;pointer-events:none;
+    background:#15241E;color:#F6F1E6;padding:10px 17px;border-radius:999px;font-size:11.5px;
+    box-shadow:0 14px 40px rgba(0,0,0,.28);transition:.28s cubic-bezier(.2,.8,.3,1);max-width:80vw
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:1320px){
+    .workspace{grid-template-columns:188px minmax(0,1fr);gap:22px;padding:24px 22px 60px}
+    .inspector{grid-column:1/-1;position:static;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:0}
+    .inspector .insp-head{grid-column:1/-1}
+    .insp-body{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:14px;padding:14px}
+    .hint{margin-bottom:0}
+    .insp-block{margin:0}
+    .insp-foot{display:none}
+  }
+  @media (max-width:980px){
+    .workspace{grid-template-columns:1fr;padding:20px 16px 50px}
+    .rail{position:static}
+    .rail-card{padding:14px}
+    .rail h3{margin-bottom:10px}
+    .rail-step{padding:9px 0}
+    .inspector{display:block}
+    .insp-body{display:block}
+    .hint{margin-bottom:14px}
+    .insp-block{margin-bottom:12px}
+    .phone{width:min(394px,92vw);transform-origin:top center}
+    .phone-screen{height:720px}
+    .appbar{padding:0 14px;height:66px}
+    .brand-copy small{display:none}
+    .brand{min-width:auto}
+    .appbar-right .ref{display:none}
+    .role-switch button{padding:7px 10px;font-size:11.5px}
+    .pc{overflow-x:auto}
+    .pc-body{grid-template-columns:150px 720px}
+  }
+  @media (max-width:520px){
+    .phone{width:100%;border-radius:40px;padding:8px}
+    .phone-screen{height:690px;border-radius:34px}
+    .appbar{flex-wrap:wrap;height:auto;padding:10px 12px;gap:8px}
+    .theme-note{display:none}
+  }
+  @media print{.appbar,.rail,.inspector,.toast{display:none}.workspace{display:block}}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="brand">
+    <div class="brand-mark">邻</div>
+    <div class="brand-copy">
+      <b>邻里集</b>
+      <small>LOCAL ALLIANCE · PROTOTYPE</small>
+    </div>
+  </div>
+  <div class="role-switch" id="roleSwitch">
+    <button data-action="switch-role" data-role="user" class="on">消费者</button>
+    <button data-action="switch-role" data-role="merchant">商户中心</button>
+    <button data-action="switch-role" data-role="platform">平台后台</button>
+  </div>
+  <div class="appbar-right">
+    <span class="ref">PRD v0.2</span>
+    <button class="reset-btn" data-action="reset">重置演示</button>
+  </div>
+</header>
+
+<div class="workspace">
+  <aside class="rail">
+    <div class="rail-card">
+      <span class="eyebrow">Demo Script</span>
+      <h3>一笔到店服务<br>的完整闭环</h3>
+      <ol id="railSteps" style="list-style:none;margin:0;padding:0"></ol>
+      <div class="rail-note"><b>跨端联动</b><br>三端共享同一份演示数据：用户支付后，商户中心立即出现待接单；核销后，平台结算中心出现待结算。</div>
+    </div>
+  </aside>
+
+  <section class="stage">
+    <section class="role-panel on" data-panel="user">
+      <div class="phone"><div class="phone-screen" id="userPhone"></div></div>
+      <div class="stage-caption">消费者 · 微信小程序 / H5</div>
+    </section>
+    <section class="role-panel" data-panel="merchant">
+      <div class="phone"><div class="phone-screen" id="merchantPhone"></div></div>
+      <div class="stage-caption">商户中心 · 小程序个人中心内进入</div>
+    </section>
+    <section class="role-panel" data-panel="platform">
+      <div class="pc" id="platformPC"></div>
+      <div class="stage-caption">平台管理后台 · PC</div>
+    </section>
+  </section>
+
+  <aside class="inspector">
+    <div class="insp-head"><b>实时状态</b><span>LIVE STATE</span></div>
+    <div class="insp-body" id="inspectorBody"></div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var ORDER = {
+    id: 'LM202611070001',
+    code: '8842 6619',
+    product: '秋日手冲体验',
+    store: '山野咖啡 · 文三店',
+    price: 88,
+    commission: 4.40,
+    net: 83.60
+  };
+  var SLOTS = ['14:00', '16:30', '19:00'];
+
+  var MERCHANTS = [
+    { id:'m1', name:'山野咖啡 · 文三店', cat:'咖啡 / 烘焙', area:'文三路', status:'active', rate:5.0, orders:42, gmv:3680, settled:3420, contact:'林主理人' },
+    { id:'m2', name:'清风洗车 · 黄龙店', cat:'洗车养护', area:'黄龙', status:'active', rate:4.0, orders:68, gmv:5440, settled:5210, contact:'吴店长' },
+    { id:'m3', name:'轻燃健身 · 西溪店', cat:'健身 / 私教', area:'西溪', status:'active', rate:6.0, orders:25, gmv:8750, settled:8210, contact:'赵店长' },
+    { id:'m4', name:'白露餐厅 · 古荡店', cat:'餐饮', area:'古荡', status:'active', rate:5.0, orders:96, gmv:7680, settled:7290, contact:'陈店长' },
+    { id:'m5', name:'拾光花店 · 古荡店', cat:'花艺 / 礼品', area:'古荡', status:'pending', rate:5.0, orders:0, gmv:0, settled:0, contact:'周女士' },
+    { id:'m6', name:'青禾亲子 · 文二店', cat:'亲子 / 教育', area:'文二路', status:'active', rate:5.0, orders:18, gmv:3600, settled:3420, contact:'许店长' },
+    { id:'m7', name:'老巷面馆 · 翠苑店', cat:'餐饮', area:'翠苑', status:'resting', rate:5.0, orders:12, gmv:960, settled:912, contact:'孙老板' },
+    { id:'m8', name:'悦己美容 · 黄龙店', cat:'美容', area:'黄龙', status:'banned', rate:8.0, orders:31, gmv:6200, settled:5700, contact:'钱店长' }
+  ];
+
+  var SEED_ORDERS = [
+    { id:'LM202611070002', merchant:'清风洗车 · 黄龙店', type:'到店服务', user:'李先生', amount:128, status:'待核销', time:'09:58', pay:'WX202611070002' },
+    { id:'LM202611070003', merchant:'轻燃健身 · 西溪店', type:'到店服务', user:'王女士', amount:199, status:'待到店', time:'10:12', pay:'WX202611070003' },
+    { id:'LM202611070004', merchant:'白露餐厅 · 古荡店', type:'实物配送', user:'陈先生', amount:156, status:'配送中', time:'10:26', pay:'WX202611070004' },
+    { id:'LM202611070005', merchant:'拾光花店 · 古荡店', type:'实物配送', user:'赵女士', amount:76, status:'售后中', time:'10:40', pay:'WX202611070005' },
+    { id:'LM202611070006', merchant:'悦己美容 · 黄龙店', type:'到店服务', user:'周女士', amount:268, status:'待接单', time:'10:55', pay:'WX202611070006' },
+    { id:'LM202611070007', merchant:'青禾亲子 · 文二店', type:'到店服务', user:'孙先生', amount:158, status:'已完成', time:'11:08', pay:'WX202611070007' }
+  ];
+
+  var CASE_DATA = [
+    { id:'a', no:'LM202611060012', title:'咖啡豆签收后包装破损', merchant:'山野咖啡', user:'张女士', amount:76, type:'实物配送', reason:'外包装破损，咖啡豆受潮，用户要求全额退款', filed:'11-06 18:20' },
+    { id:'b', no:'LM202611070005', title:'洗车套餐到店无人接待', merchant:'清风洗车', user:'赵女士', amount:128, type:'到店服务', reason:'到店后门店闭店，服务未履约，用户要求退款', filed:'11-07 10:46' },
+    { id:'c', no:'LM202611050008', title:'健身次卡核销后申请退款', merchant:'轻燃健身', user:'王女士', amount:199, type:'到店服务', reason:'已核销，用户主张效果未达预期', filed:'11-05 16:30' }
+  ];
+
+  var RULES_DEFAULT = {
+    commission:5, settlementDays:7, minWithdraw:100, withdrawFee:0,
+    acceptMin:30, shipHours:48, autoConfirmDays:7, verifyDays:30,
+    confirmHours:4, cancelHours:2, afterSaleHours:48, arbitrationHours:72,
+    autoAccept:false, partialRefund:true, allowSelfPickup:true
+  };
+
+  var USERS_SEED = [
+    { id:'u1', name:'张女士', phone:'138****6621', orders:12, gmv:1280, status:'active', joined:'2026-10-12' },
+    { id:'u2', name:'李先生', phone:'139****3018', orders:8, gmv:960, status:'active', joined:'2026-10-18' },
+    { id:'u3', name:'王女士', phone:'137****5520', orders:5, gmv:780, status:'active', joined:'2026-10-21' },
+    { id:'u4', name:'陈先生', phone:'136****8891', orders:16, gmv:2240, status:'active', joined:'2026-09-28' },
+    { id:'u5', name:'赵女士', phone:'135****1276', orders:3, gmv:420, status:'active', joined:'2026-11-01' },
+    { id:'u6', name:'周女士', phone:'188****4402', orders:9, gmv:1560, status:'active', joined:'2026-10-08' },
+    { id:'u7', name:'孙先生', phone:'186****7755', orders:2, gmv:158, status:'banned', joined:'2026-11-03' },
+    { id:'u8', name:'吴女士', phone:'150****9931', orders:6, gmv:680, status:'active', joined:'2026-10-26' }
+  ];
+
+  var CONTENT_SEED = [
+    { id:'c1', name:'首页 Banner · 邻里好店', slot:'首页顶部', status:'online', updated:'11-01 09:20' },
+    { id:'c2', name:'首页 Banner · 秋日咖啡季', slot:'首页顶部', status:'online', updated:'11-05 14:10' },
+    { id:'c3', name:'类目入口 · 洗车养护', slot:'首页类目', status:'online', updated:'10-28 16:40' },
+    { id:'c4', name:'类目入口 · 亲子教育', slot:'首页类目', status:'offline', updated:'10-28 16:40' },
+    { id:'c5', name:'推荐位 · 附近优选', slot:'首页推荐', status:'online', updated:'11-06 10:05' }
+  ];
+
+  var LOG_SEED = [
+    { time:'11:12', type:'审核', actor:'审核员 林柯', action:'审核商品上架', object:'双人晚餐套餐 · 白露餐厅', result:'通过' },
+    { time:'11:05', type:'交易', actor:'系统', action:'支付回调成功', object:'LM202611070007', result:'已入账' },
+    { time:'10:58', type:'商户', actor:'运营 苏禾', action:'商户停业', object:'老巷面馆 · 翠苑店', result:'休息中' },
+    { time:'10:46', type:'售后', actor:'客服 周岚', action:'受理售后仲裁', object:'LM202611070005', result:'处理中' },
+    { time:'10:31', type:'资金', actor:'财务 陈默', action:'提现审核通过', object:'清风洗车 · 黄龙店', result:'已打款 ¥5,210.00' },
+    { time:'10:18', type:'规则', actor:'超管 陈默', action:'调整类目佣金率', object:'健身 / 私教', result:'4% → 6%' },
+    { time:'09:41', type:'交易', actor:'系统', action:'订单支付成功', object:'LM202611070001', result:'待接单' },
+    { time:'09:26', type:'审核', actor:'审核员 林柯', action:'审核商户入驻', object:'拾光花店 · 古荡店', result:'待补充材料' },
+    { time:'09:12', type:'用户', actor:'运营 苏禾', action:'用户封禁', object:'孙先生 · 186****7755', result:'已封禁' },
+    { time:'09:00', type:'系统', actor:'系统', action:'结算批次生成', object:'2026-11-07 批次', result:'待复核' }
+  ];
+
+  var ANALYTICS_DATA = {
+    today: { gmv:'¥88.00', net:'¥88.00', orders:'1', verify:'100%', refund:'0.0%', aov:'¥88.00',
+      bars:[18,32,26,44,38,52,88] },
+    '7d': { gmv:'¥32,480', net:'¥30,120', orders:'1,264', verify:'82.4%', refund:'4.1%', aov:'¥25.7',
+      bars:[42,55,48,66,58,78,88] },
+    '30d': { gmv:'¥126,800', net:'¥118,960', orders:'4,862', verify:'79.8%', refund:'5.3%', aov:'¥26.1',
+      bars:[52,48,61,58,72,66,80] }
+  };
+
+  var ICONS = {
+    near: '<path d="M12 21s6.5-6 6.5-11.5A6.5 6.5 0 0 0 5.5 9.5C5.5 15 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/>',
+    pin: '<path d="M12 21s6.5-6 6.5-11.5A6.5 6.5 0 0 0 5.5 9.5C5.5 15 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/>',
+    search: '<circle cx="10.5" cy="10.5" r="5.5"/><path d="M15 15l4.5 4.5"/>',
+    order: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    user: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.6-3.4 3-5.2 6.5-5.2s5.9 1.8 6.5 5.2"/>',
+    grid: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+    scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/>',
+    box: '<path d="M4 8l8-4 8 4-8 4-8-4Z"/><path d="M4 8v8l8 4 8-4V8M12 12v8"/>',
+    money: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9v6M18 9v6"/>',
+    chart: '<path d="M4 20V5M4 20h16"/><path d="M8 16v-4M12 16V9M16 16v-6M20 16v-8"/>',
+    check: '<path d="M5 12l4 4L19 6"/>'
+  };
+
+  function initialState(){
+    return {
+      role: 'user',
+      userView: 'home',
+      merchantView: 'home',
+      platformView: 'dashboard',
+      slot: null,
+      orderStatus: 'none',
+      withdrawal: 'none',
+      audits: { merchant: 'pending', product: 'pending', product2: 'pending' },
+      cases: { a: 'open', b: 'open', c: 'reject' },
+      activeCase: 'a',
+      codeInput: '',
+      paying: false,
+      verifyStamp: false,
+      merchantFilter: 'all',
+      merchantDrawer: null,
+      orderFilter: 'all',
+      orderDrawer: null,
+      auditTab: 'merchant',
+      rules: Object.assign({}, RULES_DEFAULT),
+      ruleVersion: 'v1.0',
+      analyticsPeriod: '7d',
+      contentTab: 'users',
+      merchants: MERCHANTS.map(function(m){ return Object.assign({}, m); }),
+      users: USERS_SEED.map(function(u){ return Object.assign({}, u); }),
+      content: CONTENT_SEED.map(function(c){ return Object.assign({}, c); }),
+      logs: LOG_SEED.map(function(l){ return Object.assign({}, l); }),
+      logFilter: '全部'
+    };
+  }
+  var state = initialState();
+  var toastTimer = null;
+  var payTimer = null;
+
+  function icon(name){
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+  }
+  function yuan(n){ return '¥' + Number(n).toFixed(2); }
+  function normalize(s){ return String(s || '').replace(/\s+/g, ''); }
+  function has(target, arr){ return arr.indexOf(target) !== -1; }
+
+  function statusMeta(){
+    switch(state.orderStatus){
+      case 'paid': return { label:'待接单', desc:'已支付，等待商户确认预约', cls:'amber' };
+      case 'accepted': return { label:'待到店', desc:'商户已确认预约 · ' + (state.slot || '16:30'), cls:'' };
+      case 'verified': return { label:'已核销', desc:'服务已完成，等待平台结算', cls:'' };
+      case 'settled': return { label:'已核销 · 已结算', desc:'平台已结算入账', cls:'' };
+      default: return { label:'待支付', desc:'完成支付后商户才会接单', cls:'grey' };
+    }
+  }
+
+  function ledger(){
+    return {
+      pending: state.orderStatus === 'verified' ? ORDER.net : 0,
+      withdrawable: state.orderStatus === 'settled' && state.withdrawal === 'none' ? ORDER.net : 0,
+      withdrawing: state.orderStatus === 'settled' && state.withdrawal === 'requested' ? ORDER.net : 0,
+      withdrawn: state.withdrawal === 'paid' ? ORDER.net : 0
+    };
+  }
+
+  function counts(){
+    var openCases = Object.keys(state.cases).filter(function(k){ return state.cases[k] === 'open'; }).length;
+    return {
+      audits: ['merchant','product','product2'].filter(function(k){ return state.audits[k] === 'pending'; }).length,
+      arbitration: openCases,
+      settlement: state.orderStatus === 'verified' ? 1 : 0,
+      payout: state.withdrawal === 'requested' ? 1 : 0
+    };
+  }
+
+  function steps(){
+    return [
+      { n:1, title:'用户下单支付', sub:'小程序 · 选店 → 选时段 → 微信支付', done: state.orderStatus !== 'none' },
+      { n:2, title:'商户接单确认', sub:'商户中心 · 接单 → 确认预约', done: has(state.orderStatus, ['accepted','verified','settled']) },
+      { n:3, title:'到店扫码核销', sub:'用户出示核销码 → 商户核销', done: has(state.orderStatus, ['verified','settled']) },
+      { n:4, title:'平台结算提现', sub:'确认结算 → 商户申请 → 财务打款', done: state.withdrawal === 'paid' }
+    ];
+  }
+
+  function hint(){
+    switch(state.orderStatus){
+      case 'none':
+        return { text:'在消费者端选择「山野咖啡 · 文三店」，打开秋日手冲体验，选定预约时段后完成微信支付。', role:'user', view:'home', label:'去选门店' };
+      case 'paid':
+        return { text:'支付已完成，商户中心出现一笔待接单。切换到商户中心点击「接单」。', role:'merchant', view:'home', label:'去商户接单' };
+      case 'accepted':
+        return { text:'商户已确认预约。用户出示核销码，商户在核销台确认核销。', role:'merchant', view:'verify', label:'去核销' };
+      case 'verified':
+        return { text:'订单已核销，平台结算中心出现待结算。确认结算后，金额进入商户虚拟收入账户。', role:'platform', view:'settlement', label:'去平台结算' };
+      case 'settled':
+        if(state.withdrawal === 'none') return { text:'结算已入账。商户在「收入与结算」发起提现。', role:'merchant', view:'settle', label:'去申请提现' };
+        if(state.withdrawal === 'requested') return { text:'提现申请待平台审核。财务确认线下打款并回填凭证。', role:'platform', view:'settlement', label:'去确认打款' };
+        return { text:'支付 → 接单 → 核销 → 结算 → 提现，完整闭环已完成。可重置演示再走一次。', role:'', view:'', label:'' };
+    }
+    return { text:'', role:'', view:'', label:'' };
+  }
+
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+  }
+
+  function nowTime(){
+    var d = new Date();
+    return d.toTimeString().slice(0, 5);
+  }
+  function addLog(type, actor, action, object, result){
+    state.logs.unshift({ time: nowTime(), type: type, actor: actor, action: action, object: object, result: result });
+    if(state.logs.length > 60) state.logs.pop();
+  }
+  function logTypeClass(type){
+    return { '交易':'trade', '资金':'fund', '审核':'audit', '规则':'rule' }[type] || '';
+  }
+  function merchantStatusMeta(s){
+    var map = {
+      active:{ label:'营业中', cls:'' },
+      pending:{ label:'待审核', cls:'amber' },
+      resting:{ label:'休息中', cls:'grey' },
+      banned:{ label:'已封禁', cls:'red' }
+    };
+    return map[s] || map.active;
+  }
+  function orderGroup(status){
+    if(status === '待接单') return 'accept';
+    if(['待核销','待到店','配送中','待备货','待提货'].indexOf(status) > -1) return 'fulfilling';
+    if(status === '售后中') return 'aftersale';
+    if(['已完成','已核销','已结算'].indexOf(status) > -1) return 'done';
+    return 'other';
+  }
+  function orderPill(status){
+    var g = orderGroup(status);
+    return g === 'accept' ? 'amber' : g === 'aftersale' ? 'red' : g === 'done' ? 'grey' : '';
+  }
+  function getOrders(){
+    var list = SEED_ORDERS.slice();
+    if(state.orderStatus !== 'none'){
+      var map = { paid:'待接单', accepted:'待到店', verified:'已核销', settled:'已结算' };
+      list.unshift({
+        id: ORDER.id, merchant: '山野咖啡 · 文三店', type: '到店服务', user: '张女士',
+        amount: 88, status: map[state.orderStatus] || '待支付', time: '09:41',
+        pay: 'WX202611070001', main: true
+      });
+    }
+    return list;
+  }
+  function findOrder(id){
+    var list = getOrders();
+    for(var i = 0; i < list.length; i++){ if(list[i].id === id) return list[i]; }
+    return null;
+  }
+  function findMerchant(id){
+    for(var i = 0; i < state.merchants.length; i++){ if(state.merchants[i].id === id) return state.merchants[i]; }
+    return null;
+  }
+  function bumpVersion(v){
+    var parts = String(v).replace('v', '').split('.');
+    return 'v' + parts[0] + '.' + (Number(parts[1] || 0) + 1);
+  }
+
+  /* ---------- QR ---------- */
+  function finderCell(r, c, or, oc){
+    var rr = r - or, cc = c - oc;
+    return rr === 0 || rr === 6 || cc === 0 || cc === 6 || (rr >= 2 && rr <= 4 && cc >= 2 && cc <= 4);
+  }
+  function qrHTML(){
+    var out = '';
+    for(var r = 0; r < 21; r++){
+      for(var c = 0; c < 21; c++){
+        var on = false;
+        if(r < 7 && c < 7) on = finderCell(r, c, 0, 0);
+        else if(r < 7 && c >= 14) on = finderCell(r, c, 0, 14);
+        else if(r >= 14 && c < 7) on = finderCell(r, c, 14, 0);
+        else on = ((r * 17 + c * 31 + r * c * 7 + 88) % 13) < 6;
+        out += '<i class="' + (on ? 'on' : '') + '"></i>';
+      }
+    }
+    return '<div class="qr">' + out + '</div>';
+  }
+
+  /* ---------- User ---------- */
+  function statusbar(){
+    return '<div class="statusbar"><span>9:41</span><span class="island"></span><span>5G · 100%</span></div>';
+  }
+
+  function userTabbar(active){
+    var items = [['home','附近','near'],['category','分类','grid'],['order','订单','order'],['profile','我的','user']];
+    return '<nav class="tabbar">' + items.map(function(item){
+      return '<button class="' + (active === item[0] ? 'on' : '') + '" data-action="user-tab" data-view="' + item[0] + '">' +
+             icon(item[2]) + '<span>' + item[1] + '</span></button>';
+    }).join('') + '</nav>';
+  }
+
+  function storeCard(name, meta, ch, a, b, open){
+    return '<button class="store-card" ' + (open ? 'data-action="open-store"' : 'data-action="toast" data-msg="演示中仅开放山野咖啡，其他门店为列表示意"') + '>' +
+      '<div class="store-thumb" style="--tone-a:' + a + ';--tone-b:' + b + '">' + ch + '</div>' +
+      '<div class="store-info"><div class="store-name-row"><b>' + name + '</b><span class="open-badge">营业中</span></div>' +
+      '<div class="store-meta">' + meta + '</div>' +
+      '<div class="store-tags"><span class="tag tag-jade">到店服务</span><span class="tag">可预约</span><span class="tag">未用可退</span></div></div></button>';
+  }
+
+  function userHome(){
+    return '<div class="screen">' +
+      '<div class="u-loc"><div class="place">' + icon('pin') + '杭州 · 西湖区</div><span class="range">3km 内 ▾</span></div>' +
+      '<div class="u-search">' + icon('search') + '搜索门店 / 服务</div>' +
+      '<div class="promo"><div class="pt">邻里好店，一站直达</div><div class="ps">餐饮 · 洗车 · 健身 · 美容 · 亲子</div><div class="perf"></div><div class="stub">LOCAL<br>20 家</div></div>' +
+      '<div class="cat-row"><span class="cat-pill on">全部</span><span class="cat-pill">餐饮</span><span class="cat-pill">洗车</span><span class="cat-pill">健身</span><span class="cat-pill">美容</span><span class="cat-pill">亲子</span></div>' +
+      '<div class="section-row"><b>附近好店</b><small>按距离排序 · DEMO 数据</small></div>' +
+      storeCard('山野咖啡 · 文三店','咖啡 / 烘焙 · 420m · 4.8 分','咖','#2F6C5C','#123D33',true) +
+      storeCard('清风洗车 · 黄龙店','洗车养护 · 1.2km · 4.7 分','洗','#4A6E8C','#22384C',false) +
+      storeCard('轻燃健身 · 西溪店','健身 / 私教 · 2.4km · 4.9 分','燃','#9A6B3C','#4E3320',false) +
+      '</div>' + userTabbar('home');
+  }
+
+  function userStore(){
+    return '<div class="screen">' +
+      '<div class="subpage-head"><button class="back-btn" data-action="user-back">←</button><b>门店</b><button class="head-ghost" data-action="toast" data-msg="分享功能在正式版开放">···</button></div>' +
+      '<div class="store-hero"><div class="hero-seal">山野<br>咖啡</div><h2>山野咖啡 · 文三店</h2><div class="meta">咖啡 / 烘焙 · 420m · 4.8 分 · 09:00–21:00</div><div class="tags"><span>营业中</span><span>到店服务</span><span>资质已核验</span></div></div>' +
+      '<div class="content-pad"><div class="section-row" style="padding:2px 0 8px"><b>在售服务</b><small>1 项</small></div>' +
+      '<button class="product-row" data-action="open-product"><div class="product-thumb">冲</div><div class="product-info"><b>秋日手冲体验</b><div class="sub">约 45 分钟 · 1 对 1 手冲教学 · 含单品咖啡</div><div class="product-price">¥88<small>到店核销</small></div></div></button>' +
+      '</div></div>' + userTabbar('home');
+  }
+
+  function userProduct(){
+    return '<div class="screen" style="padding-bottom:96px">' +
+      '<div class="subpage-head"><button class="back-btn" data-action="user-back">←</button><b>服务详情</b><button class="head-ghost" data-action="toast" data-msg="演示页">···</button></div>' +
+      '<div class="product-art"><div class="ring"></div><div class="ring two"></div><div class="char">冲</div><div class="label">SHAN YE · POUR OVER</div></div>' +
+      '<div class="content-pad">' +
+        '<div style="display:flex;gap:5px;margin-bottom:8px"><span class="tag tag-jade">到店服务</span><span class="tag tag-amber">可预约</span><span class="tag">未核销可退</span></div>' +
+        '<h2 class="product-title">秋日手冲体验</h2>' +
+        '<div class="price-line"><b>¥88</b><span>含 1 杯单品咖啡</span></div>' +
+        '<p class="desc">在文三店完成一次 45 分钟的手冲体验：选豆、研磨、注水，由咖啡师一对一带做。到店后出示核销码即可使用。</p>' +
+        '<div class="rule-card">' +
+          '<div class="rule-line"><span>核销有效期</span><b>支付后 30 天内</b></div>' +
+          '<div class="rule-line"><span>预约方式</span><b>下单时选择时段</b></div>' +
+          '<div class="rule-line"><span>退款规则</span><b>未核销、有效期内可退</b></div>' +
+          '<div class="rule-line"><span>门店地址</span><b>西湖区文三路 90 号</b></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="fixed-bar"><div class="total">到店价<b>¥88</b></div><button class="primary-btn" data-action="user-buy">立即购买</button></div>' +
+      '</div>';
+  }
+
+  function userCheckout(){
+    var slots = SLOTS.map(function(s){
+      return '<button class="slot ' + (state.slot === s ? 'on' : '') + '" data-action="pick-slot" data-slot="' + s + '">' + s + '</button>';
+    }).join('');
+    return '<div class="screen" style="padding-bottom:100px">' +
+      '<div class="subpage-head"><button class="back-btn" data-action="user-back">←</button><b>确认订单</b><span style="width:30px"></span></div>' +
+      '<div class="content-pad">' +
+        '<div class="checkout-store">' + icon('pin') + '山野咖啡 · 文三店 <span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--muted)">420m</span></div>' +
+        '<div class="checkout-item"><div class="thumb">冲</div><div class="info"><b>秋日手冲体验</b><small>到店服务 · 约 45 分钟</small></div><div class="amt">¥88</div></div>' +
+        '<div class="form-block"><label>预约到店时段</label><div class="slot-row">' + slots + '</div></div>' +
+        '<div class="form-block"><label>到店人</label><div class="input-fake">138****6621 · 张女士</div></div>' +
+        '<div class="bill"><div class="bill-line"><span>商品金额</span><b>¥88.00</b></div><div class="bill-line"><span>服务费</span><b>¥0.00</b></div><div class="bill-line total"><span>合计</span><b>¥88.00</b></div></div>' +
+      '</div>' +
+      (state.paying ? '<div class="pay-overlay"><div class="spinner"></div><b>微信支付中</b><small>WECHAT PAY · ¥88.00</small></div>' : '') +
+      '<div class="fixed-bar"><div class="total">合计<b>¥88</b></div><button class="wechat-btn" data-action="user-pay" ' + (!state.slot || state.paying ? 'disabled' : '') + '>微信支付</button></div>' +
+      '</div>';
+  }
+
+  function userSuccess(){
+    return '<div class="screen"><div class="success-screen">' +
+      '<div class="stamp">支付成功</div>' +
+      '<h2>已通知商户接单</h2><p>预约时段 ' + (state.slot || '16:30') + ' · 山野咖啡 · 文三店</p>' +
+      '<div class="success-receipt"><div class="r"><span>订单号</span><b>' + ORDER.id + '</b></div><div class="r"><span>支付金额</span><b>¥88.00</b></div><div class="r"><span>核销码</span><b>待商户接单后展示</b></div></div>' +
+      '<button class="primary-btn" data-action="user-order">查看订单</button>' +
+      '<button class="text-btn" data-action="go-role" data-role="merchant" data-view="home">切换到商户中心接单 →</button>' +
+      '</div></div>';
+  }
+
+  function timeline(){
+    var s = state.orderStatus;
+    var d1 = s !== 'none';
+    var d2 = has(s, ['accepted','verified','settled']);
+    var d3 = has(s, ['verified','settled']);
+    var d4 = s === 'settled';
+    return '<div class="tl-item ' + (d1 ? 'done' : '') + '"><span class="dot"></span><div><b>支付成功</b><small>' + (d1 ? '已支付 ¥88.00' : '等待支付') + '</small></div></div>' +
+      '<div class="tl-item ' + (d2 ? 'done' : '') + '"><span class="dot"></span><div><b>商户接单</b><small>' + (d2 ? '预约 ' + (state.slot || '16:30') + ' 已确认' : '等待商户确认') + '</small></div></div>' +
+      '<div class="tl-item ' + (d3 ? 'done' : '') + '"><span class="dot"></span><div><b>到店核销</b><small>' + (d3 ? '商户已扫码核销' : '待到店出示核销码') + '</small></div></div>' +
+      '<div class="tl-item ' + (d4 ? 'done' : '') + '"><span class="dot"></span><div><b>平台结算</b><small>' + (d4 ? '¥83.60 已入商户虚拟账户' : '核销后进入待结算') + '</small></div></div>';
+  }
+
+  function userOrder(){
+    var s = state.orderStatus;
+    var showQR = has(s, ['accepted','verified','settled']);
+    var st = statusMeta();
+    return '<div class="screen">' +
+      '<div class="subpage-head"><button class="back-btn" data-action="user-back">←</button><b>订单详情</b><button class="head-ghost" data-action="toast" data-msg="客服在正式版开放">客服</button></div>' +
+      '<div class="order-top"><span class="label">ORDER ' + ORDER.id + '</span><div class="status-big">' + st.label + '</div><p>' + st.desc + '</p></div>' +
+      '<div class="content-pad" style="padding-top:0">' +
+        '<div class="order-ticket"><div class="ticket-head"><b>' + ORDER.store + '</b><small>到店服务</small></div>' +
+        (showQR ?
+          '<div class="qr-wrap">' + qrHTML() + '<span class="ticket-stamp ' + (has(s, ['verified','settled']) ? 'show' : '') + '">已核销</span></div>' +
+          '<div class="code">' + ORDER.code + '</div><div class="code-tip">请到店出示核销码，由商户扫码核销</div>'
+          : '<div class="ticket-wait">' + (s === 'paid' ? '商户接单后生成核销码' : '完成支付后生成核销码') + '</div>') +
+        '<div class="ticket-divider"></div>' +
+        '<div class="ticket-info"><div class="r"><span>预约时段</span><b>' + (state.slot || '16:30') + '</b></div><div class="r"><span>核销有效期</span><b>支付后 30 天</b></div><div class="r"><span>订单金额</span><b>¥88.00</b></div></div></div>' +
+        '<div class="timeline">' + timeline() + '</div>' +
+        '<div class="order-actions"><button class="ghost-btn" data-action="toast" data-msg="评价功能在核销后可提交（演示）">评价服务</button><button class="ghost-btn" data-action="toast" data-msg="售后入口按订单状态开放（演示）">申请售后</button></div>' +
+      '</div>' + userTabbar('order') + '</div>';
+  }
+
+  function userProfile(){
+    return '<div class="screen"><div class="profile">' +
+      '<div class="profile-top"><div class="avatar">张</div><div><b>张女士</b><small>NEIGHBOR MEMBER · 西湖区</small></div></div>' +
+      '<div class="menu-row"><span>我的订单</span><span>' + (state.orderStatus === 'none' ? '0' : '1') + ' ›</span></div>' +
+      '<div class="menu-row"><span>收货地址</span><span>1 ›</span></div>' +
+      '<div class="menu-row"><span>优惠券 / 积分</span><span>P1 未开放</span></div>' +
+      '<div class="menu-row"><span>客服与帮助</span><span>›</span></div>' +
+      '<div class="menu-row"><span>隐私与位置授权</span><span>›</span></div>' +
+      '<div class="menu-row"><span>设置</span><span>›</span></div>' +
+      '</div></div>' + userTabbar('profile');
+  }
+
+  function renderUser(){
+    var el = document.getElementById('userPhone');
+    var view = state.userView;
+    var body;
+    if(view === 'store') body = userStore();
+    else if(view === 'product') body = userProduct();
+    else if(view === 'checkout') body = userCheckout();
+    else if(view === 'success') body = userSuccess();
+    else if(view === 'order') body = userOrder();
+    else if(view === 'profile') body = userProfile();
+    else body = userHome();
+    el.innerHTML = statusbar() + body;
+  }
+
+  /* ---------- Merchant ---------- */
+  function merchantTabbar(active){
+    var items = [['home','工作台','grid'],['order','订单','order'],['verify','核销','scan'],['settle','结算','money']];
+    return '<nav class="tabbar">' + items.map(function(item){
+      return '<button class="' + (active === item[0] ? 'on' : '') + '" data-action="merchant-view" data-view="' + item[0] + '">' +
+             icon(item[2]) + '<span>' + item[1] + '</span></button>';
+    }).join('') + '</nav>';
+  }
+
+  function merchantOrderCard(){
+    var s = state.orderStatus;
+    if(s === 'none'){
+      return '<div class="m-empty">今天还没有新订单。<br>消费者完成支付后，订单会实时出现在这里。</div>';
+    }
+    var sm = statusMeta();
+    var actions = '';
+    if(s === 'paid'){
+      actions = '<button class="m-btn" data-action="merchant-accept">接单并确认预约</button>' +
+                '<button class="m-btn light" data-action="toast" data-msg="拒单会触发自动退款，演示中未开启">拒单</button>';
+    } else if(s === 'accepted'){
+      actions = '<button class="m-btn" data-action="merchant-view" data-view="verify">打开核销台</button>';
+    } else {
+      actions = '<button class="m-btn light" data-action="merchant-view" data-view="settle">查看结算</button>';
+    }
+    return '<div class="m-order"><div class="m-order-top"><span class="no">' + ORDER.id + '</span><span class="status-pill ' + sm.cls + '">' + sm.label + '</span></div>' +
+      '<div class="m-order-body"><div class="m-order-thumb">冲</div><div class="m-order-info"><b>' + ORDER.product + ' × 1</b>预约 ' + (state.slot || '16:30') + ' · 到店核销<br><span class="amt">¥88.00</span></div></div>' +
+      '<div class="m-actions">' + actions + '</div></div>';
+  }
+
+  function merchantHome(){
+    var l = ledger();
+    var pending = state.orderStatus === 'paid' ? 1 : 0;
+    var revenue = has(state.orderStatus, ['verified','settled']) ? '¥ 88.00' : '¥ 0.00';
+    return '<div class="screen">' +
+      '<div class="m-head"><div class="top"><span>商户中心</span><span>营业中 ●</span></div><h2>山野咖啡 · 文三店</h2><small>文三路 90 号 · 今日 09:00–21:00</small></div>' +
+      '<div class="m-body">' +
+        '<div class="m-revenue"><div class="m-kpi"><small>TODAY REVENUE</small><b>' + revenue + '</b><span class="unit">已完成订单</span></div>' +
+        '<div class="m-kpi ' + (pending ? 'warn' : '') + '"><small>待接单</small><b>' + pending + '</b><span class="unit">' + (pending ? '请及时处理' : '暂无新单') + '</span></div></div>' +
+        '<div class="quick-grid">' +
+          '<button class="quick-btn" data-action="merchant-view" data-view="verify">' + icon('scan') + '<span>核销台</span></button>' +
+          '<button class="quick-btn" data-action="merchant-view" data-view="settle">' + icon('money') + '<span>结算</span></button>' +
+          '<button class="quick-btn" data-action="toast" data-msg="商品管理在正式版开放（演示）">' + icon('box') + '<span>商品</span></button>' +
+          '<button class="quick-btn" data-action="toast" data-msg="售后处理在正式版开放（演示）">' + icon('order') + '<span>售后</span></button>' +
+        '</div>' +
+        '<div class="m-section"><b>订单</b><small>' + (state.orderStatus === 'none' ? '暂无' : '最近一笔') + '</small></div>' +
+        merchantOrderCard() +
+        '<div class="m-note">本页数据与消费者端、平台端实时联动。佣金 5% 由平台在结算时扣除。</div>' +
+      '</div>' + merchantTabbar('home') + '</div>';
+  }
+
+  function merchantOrderView(){
+    return '<div class="screen">' +
+      '<div class="subpage-head"><button class="back-btn" data-action="merchant-view" data-view="home">←</button><b>订单管理</b><span style="width:30px"></span></div>' +
+      '<div class="m-body" style="padding-top:10px">' + merchantOrderCard() +
+        '<div class="timeline" style="margin:12px 0">' + timeline() + '</div>' +
+        '<div class="m-note">商户看到的订单状态与用户端、平台端实时一致。接单即确认预约，核销后进入待结算。</div>' +
+      '</div>' + merchantTabbar('order') + '</div>';
+  }
+
+  function merchantVerify(){
+    var canVerify = state.orderStatus === 'accepted';
+    var verified = has(state.orderStatus, ['verified','settled']);
+    return '<div class="screen">' +
+      '<div class="subpage-head"><button class="back-btn" data-action="merchant-view" data-view="home">←</button><b>核销台</b><span class="tag tag-jade" style="font-size:8.5px">店长 / 店员可用</span></div>' +
+      '<div class="m-body" style="padding-top:8px">' +
+        '<div class="scanner"><span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span><div class="laser"></div><b>扫描顾客核销码</b><small>ALIGN CODE WITHIN FRAME</small></div>' +
+        '<div class="verify-form"><label class="code-label">核销码</label>' +
+          '<input class="code-input" id="codeInput" inputmode="numeric" placeholder="输入或扫码识别" value="' + (state.codeInput || '') + '">' +
+          '<button class="fill-btn" data-action="fill-code">填入演示核销码 8842 6619</button>' +
+          '<div class="verify-actions"><button class="m-btn light" data-action="simulate-scan">模拟扫码</button><button class="m-btn" data-action="merchant-verify" ' + (canVerify ? '' : 'disabled style="opacity:.45"') + '>确认核销</button></div>' +
+        '</div>' +
+        (verified ?
+          '<div class="verify-result"><div class="seal">核销</div><div><b>核销成功 · ' + ORDER.id + '</b><small>操作人：店长 · 16:42 · 已计入经营数据</small></div></div>'
+          : '<div class="m-note">' + (canVerify ? '订单已接单，可执行核销。核销后不可撤销，请与顾客确认服务已完成。' : '当前没有待核销订单。请先在消费者端完成支付，并在商户中心接单。') + '</div>') +
+      '</div>' + merchantTabbar('verify') + '</div>';
+  }
+
+  function merchantSettle(){
+    var l = ledger();
+    var block = '';
+    if(state.orderStatus !== 'settled'){
+      block = '<div class="settle-card"><small>可提现金额</small><b>' + yuan(l.withdrawable) + '</b><div class="row"><span class="settle-status">订单核销并经平台结算后可提现</span></div></div>';
+    } else if(state.withdrawal === 'none'){
+      block = '<div class="settle-card"><small>可提现金额</small><b>' + yuan(l.withdrawable) + '</b><div class="row"><span class="settle-status">已入账 · 待申请</span><button class="btn" data-action="merchant-withdraw">申请提现</button></div></div>';
+    } else if(state.withdrawal === 'requested'){
+      block = '<div class="settle-card"><small>提现金额</small><b>' + yuan(l.withdrawing) + '</b><div class="row"><span class="settle-status">平台财务审核中 · 线下打款</span></div></div>';
+    } else {
+      block = '<div class="settle-card"><small>本期已提现</small><b>' + yuan(l.withdrawn) + '</b><div class="row"><span class="settle-status">已线下打款 · 凭证已回填</span></div></div>';
+    }
+    return '<div class="screen">' +
+      '<div class="m-head"><div class="top"><span>收入与结算</span><span>虚拟收入账户</span></div><h2>山野咖啡 · 文三店</h2><small>结算周期 N 天 · 平台可配置（原型手动触发）</small></div>' +
+      '<div class="m-body">' +
+        '<div class="balance-grid"><div class="balance-card"><small>待结算</small><b>' + yuan(l.pending) + '</b></div><div class="balance-card hl"><small>可提现</small><b>' + yuan(l.withdrawable) + '</b></div><div class="balance-card"><small>已提现</small><b>' + yuan(l.withdrawn) + '</b></div></div>' +
+        block +
+        '<div class="ledger"><div class="ledger-head"><span>账户流水</span><span>LEDGER</span></div>' +
+          '<div class="ledger-row"><span>订单收入</span><b>' + (state.orderStatus !== 'none' ? '+ ¥88.00' : '¥0.00') + '</b></div>' +
+          '<div class="ledger-row"><span>平台佣金 5%</span><b class="minus">' + (state.orderStatus !== 'none' ? '- ¥4.40' : '¥0.00') + '</b></div>' +
+          '<div class="ledger-row"><span>结算入账</span><b>' + (state.orderStatus === 'settled' ? '+ ¥83.60' : '¥0.00') + '</b></div>' +
+          '<div class="ledger-row"><span>提现打款</span><b class="minus">' + (state.withdrawal === 'paid' ? '- ¥83.60' : '¥0.00') + '</b></div>' +
+        '</div>' +
+        '<div class="m-note">退款会冲减虚拟账户余额；已提现后发生退款会形成负余额，从后续结算抵扣。平台线下打款只用于提现，不用于退款。</div>' +
+      '</div>' + merchantTabbar('settle') + '</div>';
+  }
+
+  function renderMerchant(){
+    var el = document.getElementById('merchantPhone');
+    var view = state.merchantView;
+    var body;
+    if(view === 'order') body = merchantOrderView();
+    else if(view === 'verify') body = merchantVerify();
+    else if(view === 'settle') body = merchantSettle();
+    else body = merchantHome();
+    el.innerHTML = statusbar() + body;
+  }
+
+  /* ---------- Platform ---------- */
+  function platformSide(){
+    var c = counts();
+    var mPending = state.merchants.filter(function(m){ return m.status === 'pending'; }).length;
+    var groups = [
+      { label:'总览', items:[['dashboard','工作台','']] },
+      { label:'交易', items:[['orders','订单监控',''],['arbitration','售后仲裁', c.arbitration]] },
+      { label:'商户', items:[['merchants','商户管理', mPending],['audit','审核中心', c.audits]] },
+      { label:'资金', items:[['settlement','结算中心', c.settlement + c.payout],['rules','规则配置','']] },
+      { label:'运营', items:[['analytics','数据统计',''],['users','用户与内容','']] },
+      { label:'系统', items:[['logs','操作日志','2']] }
+    ];
+    return '<aside class="pc-side"><div class="pc-brand"><b>邻里集 · 平台</b><small>ALLIANCE ADMIN</small></div>' +
+      groups.map(function(g){
+        return '<div class="pc-group">' + g.label + '</div>' + g.items.map(function(item){
+          return '<button class="pc-navbtn ' + (state.platformView === item[0] ? 'on' : '') + '" data-action="platform-view" data-view="' + item[0] + '">' +
+            item[1] + (item[2] ? '<em>' + item[2] + '</em>' : '') + '</button>';
+        }).join('');
+      }).join('') +
+      '<div class="pc-user"><i>陈</i><span>超管 · 陈默</span></div></aside>';
+  }
+
+  function todoRow(view, label, n){
+    return '<div class="todo-row"><button data-action="platform-view" data-view="' + view + '">' + label + '</button><em class="' + (n ? '' : 'zero') + '">' + n + ' 待处理</em></div>';
+  }
+
+  function activityFeed(){
+    var rows = [];
+    if(state.orderStatus !== 'none') rows.push(['09:41','消费者完成支付 ¥88.00','订单进入待接单']);
+    if(has(state.orderStatus, ['accepted','verified','settled'])) rows.push(['09:48','山野咖啡接单','预约 ' + (state.slot || '16:30')]);
+    if(has(state.orderStatus, ['verified','settled'])) rows.push(['16:42','商户核销成功','订单进入待结算']);
+    if(state.orderStatus === 'settled') rows.push(['17:10','平台确认结算','商户可结算 ¥83.60']);
+    if(state.withdrawal === 'requested') rows.push(['17:18','商户发起提现','等待财务审核']);
+    if(state.withdrawal === 'paid') rows.push(['17:26','财务线下打款完成','打款凭证已回填']);
+    if(!rows.length){
+      rows = state.logs.filter(function(l){ return l.type === '交易'; }).slice(0, 4).map(function(l){
+        return [l.time, l.action + ' · ' + l.object, l.result];
+      });
+    }
+    return rows.map(function(r){
+      return '<div class="feed-row"><span class="t">' + r[0] + '</span><div>' + r[1] + ' · <b>' + r[2] + '</b></div></div>';
+    }).join('');
+  }
+
+  function platformDashboard(){
+    var c = counts();
+    var orders = getOrders();
+    var totalPaid = orders.reduce(function(sum, o){ return sum + o.amount; }, 0);
+    var paid = state.orderStatus !== 'none';
+    var activeM = state.merchants.filter(function(m){ return m.status === 'active'; }).length;
+    var activeOrders = orders.filter(function(o){ return orderGroup(o.status) === 'accept' || orderGroup(o.status) === 'fulfilling'; }).length;
+    return '<div class="pc-head"><div><span class="eyebrow">TODAY · 2026-11-07</span><h1>运营工作台</h1></div><div class="pc-date">杭州 · 西湖区</div></div>' +
+      '<div class="pc-kpis">' +
+        '<div class="pc-kpi"><small>今日支付金额</small><b>¥' + totalPaid.toFixed(2) + '</b><span>含退款前</span></div>' +
+        '<div class="pc-kpi"><small>支付订单</small><b>' + orders.length + '</b><span>笔</span></div>' +
+        '<div class="pc-kpi"><small>待审核</small><b>' + c.audits + '</b><span>商户 / 商品</span></div>' +
+        '<div class="pc-kpi"><small>待仲裁</small><b>' + c.arbitration + '</b><span>售后争议</span></div>' +
+      '</div>' +
+      '<div class="metric-strip">' +
+        '<div class="metric-mini">核销率<b>82.4%</b></div>' +
+        '<div class="metric-mini">退款率<b>4.1%</b></div>' +
+        '<div class="metric-mini">客单价<b>¥25.7</b></div>' +
+        '<div class="metric-mini">营业中商户<b>' + activeM + ' / ' + state.merchants.length + '</b></div>' +
+      '</div>' +
+      '<div class="pc-grid">' +
+        '<div class="pc-panel"><div class="panel-head"><b>待办队列</b><small>CLICK TO OPEN</small></div>' +
+          todoRow('audit','商户 / 商品审核', c.audits) +
+          todoRow('arbitration','售后仲裁', c.arbitration) +
+          todoRow('orders','待接单 / 履约中', activeOrders) +
+          todoRow('settlement','待结算订单', c.settlement) +
+          todoRow('settlement','待打款提现', c.payout) +
+        '</div>' +
+        '<div class="pc-panel"><div class="panel-head"><b>近 7 日支付金额</b><small>DEMO DATA</small></div>' +
+          '<div class="chart"><div style="height:42%"></div><div style="height:55%"></div><div style="height:48%"></div><div style="height:66%"></div><div style="height:58%"></div><div style="height:78%"></div><div style="height:' + (paid ? '88' : '12') + '%"></div></div>' +
+          '<div class="chart-x"><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div>日</div></div>' +
+        '</div>' +
+        '<div class="pc-panel"><div class="panel-head"><b>异常告警</b><small>ALERTS</small></div>' +
+          '<div class="alert-strip"><div class="alert-card"><b>1</b><div>支付回调延迟<br><span style="font-size:8px;opacity:.75">订单 LM...0001</span></div></div>' +
+          '<div class="alert-card"><b>1</b><div>审核超时<br><span style="font-size:8px;opacity:.75">拾光花店 · 超过 2 小时</span></div></div></div>' +
+          '<div style="margin-top:8px"><div class="alert-card ok"><b>0</b><div>退款 / 打款失败<br><span style="font-size:8px;opacity:.75">近 24 小时无失败任务</span></div></div></div>' +
+        '</div>' +
+        '<div class="pc-panel"><div class="panel-head"><b>类目 GMV 占比</b><small>CATEGORY</small></div>' +
+          '<div class="share-row"><span>餐饮</span><div class="share-track"><div class="share-fill" style="width:38%"></div></div><em>38%</em></div>' +
+          '<div class="share-row"><span>健身</span><div class="share-track"><div class="share-fill" style="width:22%"></div></div><em>22%</em></div>' +
+          '<div class="share-row"><span>洗车</span><div class="share-track"><div class="share-fill" style="width:18%"></div></div><em>18%</em></div>' +
+          '<div class="share-row"><span>美容</span><div class="share-track"><div class="share-fill" style="width:12%"></div></div><em>12%</em></div>' +
+          '<div class="share-row"><span>亲子</span><div class="share-track"><div class="share-fill" style="width:10%"></div></div><em>10%</em></div>' +
+        '</div>' +
+        '<div class="pc-panel wide"><div class="panel-head"><b>最近动态</b><small>LIVE STATE</small></div><div class="feed">' + activityFeed() + '</div></div>' +
+      '</div>';
+  }
+
+  function platformAudit(){
+    var items = [
+      { id:'merchant', tab:'merchant', type:'商户入驻 · MERCHANT', name:'拾光花店 · 古荡店', meta:'花艺 / 礼品 · 提交于 09:12 · 资料 3 项', docs:['营业执照','法人证件','门店照片'], points:['执照信息一致','法人证件齐全','门店照片清晰'] },
+      { id:'product', tab:'product', type:'商品上架 · PRODUCT', name:'双人晚餐套餐 · 白露餐厅', meta:'餐饮 / 双人套餐 · ¥198 · 提交于 09:26', docs:['食品经营许可','菜品实拍','退款规则'], points:['许可在有效期内','退款规则完整'] },
+      { id:'product2', tab:'product', type:'商品上架 · PRODUCT', name:'10 次私教卡 · 轻燃健身', meta:'健身 / 私教 · ¥699 · 提交于 09:34', docs:['预付卡备案','教练资质','使用规则'], points:['预付卡规则合规','有效期明确'] }
+    ];
+    var mCount = items.filter(function(i){ return i.tab === 'merchant' && state.audits[i.id] === 'pending'; }).length;
+    var pCount = items.filter(function(i){ return i.tab === 'product' && state.audits[i.id] === 'pending'; }).length;
+    var visible = items.filter(function(i){ return i.tab === state.auditTab; });
+    return '<div class="pc-head"><div><span class="eyebrow">ADMISSION</span><h1>审核中心</h1></div><div class="pc-date">待审核 ' + counts().audits + ' 项</div></div>' +
+      '<div class="pc-tabs"><button data-action="audit-tab" data-tab="merchant" class="' + (state.auditTab === 'merchant' ? 'on' : '') + '">商户入驻 ' + mCount + '</button><button data-action="audit-tab" data-tab="product" class="' + (state.auditTab === 'product' ? 'on' : '') + '">商品上架 ' + pCount + '</button></div>' +
+      '<div class="pc-toolbar"><span class="pc-note" style="margin:0">审核记录会写入操作日志，驳回时必须填写原因。</span><button class="pc-btn" data-action="batch-audit">批量通过当前页</button></div>' +
+      visible.map(function(a){
+        var s = state.audits[a.id];
+        return '<div class="audit-card"><div class="top"><div><div class="type">' + a.type + '</div><b>' + a.name + '</b><div class="meta">' + a.meta + '</div></div></div>' +
+          '<div class="doc-chips">' + a.docs.map(function(d){ return '<span>' + d + '</span>'; }).join('') + '</div>' +
+          '<div class="review-points">' + a.points.map(function(p){ return '<span>' + p + '</span>'; }).join('') + '</div>' +
+          (s === 'pending' ?
+            '<div class="audit-btns"><button class="ok" data-action="audit" data-id="' + a.id + '" data-decision="approved">通过</button><button class="no" data-action="audit" data-id="' + a.id + '" data-decision="rejected">驳回</button><button data-action="toast" data-msg="补充材料通知已发送（演示）">要求补充</button></div>'
+            : '<div class="audit-stamp ' + (s === 'approved' ? 'ok' : 'no') + '">' + (s === 'approved' ? '已通过' : '已驳回') + '</div>') +
+        '</div>';
+      }).join('') +
+      '<div class="pc-note">审核通过后商户可开业、商品可上架；价格、主图与类目变更需要重新审核。</div>';
+  }
+
+  function platformArbitration(){
+    var openCount = Object.keys(state.cases).filter(function(k){ return state.cases[k] === 'open'; }).length;
+    var totalAmount = CASE_DATA.reduce(function(sum, c){ return sum + c.amount; }, 0);
+    var active = CASE_DATA.filter(function(c){ return c.id === state.activeCase; })[0] || CASE_DATA[0];
+    var status = state.cases[active.id];
+    var resolved = status !== 'open';
+    var resultText = {
+      refund: '平台判定：全额退款，商户承担',
+      partial: '平台判定：部分退款，双方分担',
+      reject: '平台判定：驳回售后申请，维持原订单'
+    }[status] || '';
+    var resultAmount = status === 'partial' ? active.amount / 2 : active.amount;
+    var amountSuffix = status === 'reject' ? '' : '（¥' + resultAmount.toFixed(2) + '）';
+    var list = CASE_DATA.map(function(c){
+      var st = state.cases[c.id];
+      return '<button class="case-list-item ' + (c.id === active.id ? 'on' : '') + '" data-action="select-case" data-id="' + c.id + '">' +
+        '<div class="row"><b>' + c.title + '</b><span class="status-pill ' + (st === 'open' ? 'amber' : 'grey') + '">' + (st === 'open' ? '待处理' : '已结案') + '</span></div>' +
+        '<small>' + c.no + ' · ' + c.merchant + ' · ¥' + c.amount.toFixed(2) + '</small></button>';
+    }).join('');
+    return '<div class="pc-head"><div><span class="eyebrow">AFTER-SALE · ARBITRATION</span><h1>售后仲裁</h1></div><div class="pc-date">待处理 ' + openCount + ' 件</div></div>' +
+      '<div class="metric-strip"><div class="metric-mini">待处理<b>' + openCount + '</b></div><div class="metric-mini">已结案<b>' + (CASE_DATA.length - openCount) + '</b></div><div class="metric-mini">争议金额<b>¥' + totalAmount.toFixed(2) + '</b></div><div class="metric-mini">平均处理时长<b>18.4 h</b></div></div>' +
+      '<div class="case-layout"><div class="case-list">' + list + '</div>' +
+        '<div class="case-detail"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">' +
+          '<div><div class="type" style="font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--persimmon)">CASE · ' + active.no + '</div>' +
+          '<h3>' + active.title + '</h3><div class="meta">用户 ' + active.user + ' · 商户 ' + active.merchant + ' · ' + active.type + '<br>受理时间 ' + active.filed + '</div></div>' +
+          '<div class="amount">¥' + active.amount.toFixed(2) + '</div></div>' +
+          '<div class="evidence-grid"><div class="evidence">' + active.user + ' 凭证 01</div><div class="evidence e2">商户履约凭证</div><div class="evidence e3">平台交易记录</div></div>' +
+          '<div class="drawer-section" style="margin-bottom:8px"><div class="t">争议原因</div><div class="meta">' + active.reason + '</div></div>' +
+          (resolved ?
+            '<div class="case-result"><span>' + resultText + amountSuffix + '</span><b>已结案</b></div>'
+            : '<div class="decision-btns"><button class="danger" data-action="arbitration" data-decision="refund">全额退款 ¥' + active.amount.toFixed(2) + '</button><button data-action="arbitration" data-decision="partial">部分退款 ¥' + (active.amount / 2).toFixed(2) + '</button><button class="primary" data-action="arbitration" data-decision="reject">驳回申请</button></div>') +
+        '</div></div>' +
+      '<div class="pc-note">判定需选择责任方并记录理由；退款从平台账户原路退回，商户承担部分从其虚拟账户余额扣回。仲裁结论与举证资料同步通知双方。</div>';
+  }
+
+  function settlementRow(){
+    if(!has(state.orderStatus, ['verified','settled'])) return '';
+    var settled = state.orderStatus === 'settled';
+    return '<table class="pc-table"><thead><tr><th>订单</th><th>商户</th><th>实付</th><th>佣金 5%</th><th>可结算</th><th>状态</th><th></th></tr></thead><tbody><tr>' +
+      '<td><b>' + ORDER.id + '</b><br><span style="font-size:9px;color:var(--muted)">' + ORDER.product + '</span></td>' +
+      '<td>山野咖啡</td><td class="money">¥88.00</td><td class="money">¥4.40</td><td class="money">¥83.60</td>' +
+      '<td><span class="status-pill ' + (settled ? '' : 'amber') + '">' + (settled ? '已入账' : '待结算') + '</span></td>' +
+      '<td>' + (settled ? '<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">已完成</span>' : '<button class="table-action primary" data-action="platform-settle">确认结算</button>') + '</td>' +
+      '</tr></tbody></table>';
+  }
+
+  function payoutPanel(){
+    if(state.withdrawal === 'requested'){
+      return '<div class="settle-panel"><div class="panel-head"><b>提现打款</b><small>PAYOUT REQUEST</small></div>' +
+        '<div class="payout-row"><span>山野咖啡 · 招商银行 ****6621</span><span class="amt">¥83.60</span><button class="table-action primary" data-action="platform-payout">确认线下打款</button></div>' +
+        '<div class="pc-note">确认后请回填银行回单号；系统将提现单标记为已打款并扣减虚拟账户可提现余额。</div></div>';
+    }
+    if(state.withdrawal === 'paid'){
+      return '<div class="settle-panel"><div class="panel-head"><b>提现打款</b><small>PAYOUT</small></div>' +
+        '<div class="payout-row"><span>山野咖啡 · 招商银行 ****6621</span><span class="amt">¥83.60</span><span class="status-pill">已打款</span></div>' +
+        '<div class="pc-note">打款凭证号 LC20261107001 · 操作人 财务 陈默 · 系统已记账。</div></div>';
+    }
+    return '<div class="settle-panel"><div class="panel-head"><b>提现打款</b><small>PAYOUT</small></div>' +
+      '<div class="pc-note">' + (state.orderStatus === 'settled' ? '结算已入账，等待商户在商户中心发起提现申请。' : '订单结算后，商户可发起提现；平台以线下银行转账并回填凭证。') + '</div></div>';
+  }
+
+  function platformSettlement(){
+    var l = ledger();
+    return '<div class="pc-head"><div><span class="eyebrow">SETTLEMENT · N DAYS</span><h1>结算中心</h1></div>' +
+      '<div style="display:flex;gap:6px;align-items:center"><span class="pc-date">结算周期 N 天 · 平台配置</span><button class="pc-btn" data-action="toast" data-msg="对账单已导出（演示）">导出对账单</button></div></div>' +
+      '<div class="pc-kpis">' +
+        '<div class="pc-kpi"><small>待结算</small><b>' + yuan(l.pending) + '</b><span>' + (state.orderStatus === 'verified' ? '1 笔' : '0 笔') + '</span></div>' +
+        '<div class="pc-kpi"><small>已结算待提现</small><b>' + yuan(l.withdrawable) + '</b><span>虚拟账户</span></div>' +
+        '<div class="pc-kpi"><small>提现审核中</small><b>' + yuan(l.withdrawing) + '</b><span>线下打款</span></div>' +
+        '<div class="pc-kpi"><small>本期已打款</small><b>' + yuan(l.withdrawn) + '</b><span>凭证已回填</span></div>' +
+      '</div>' +
+      '<div class="settle-panel"><div class="panel-head"><b>本期结算订单</b><small>CURRENT BATCH</small></div>' +
+        (settlementRow() || '<div class="empty-state"><b>暂无待结算订单</b>订单核销后，会在这里生成待结算记录。</div>') +
+        '<div class="pc-note">佣金按订单支付时的规则快照计算：¥88.00 × 5% = ¥4.40，商户可结算 ¥83.60。</div></div>' +
+      payoutPanel() +
+      '<div class="settle-panel"><div class="panel-head"><b>历史结算批次</b><small>HISTORY</small></div>' +
+        '<table class="admin-table"><thead><tr><th>批次</th><th>周期</th><th>商户数</th><th>结算额</th><th>状态</th><th>凭证</th></tr></thead><tbody>' +
+        '<tr><td><b>B20261101</b><span class="sub">2026-11-01 批次</span></td><td>11-01 ~ 11-07</td><td>6</td><td class="money">¥12,480.00</td><td><span class="status-pill">已打款</span></td><td>LC1101</td></tr>' +
+        '<tr><td><b>B20261025</b><span class="sub">2026-10-25 批次</span></td><td>10-25 ~ 10-31</td><td>5</td><td class="money">¥9,860.00</td><td><span class="status-pill">已打款</span></td><td>LC1025</td></tr>' +
+        '<tr><td><b>B20261018</b><span class="sub">2026-10-18 批次</span></td><td>10-18 ~ 10-24</td><td>4</td><td class="money">¥7,240.00</td><td><span class="status-pill">已打款</span></td><td>LC1018</td></tr>' +
+        '</tbody></table></div>';
+  }
+
+  function platformMerchants(){
+    var filters = [['all','全部'],['active','营业中'],['pending','待审核'],['resting','休息中'],['banned','已封禁']];
+    var countsBy = {
+      all: state.merchants.length,
+      active: state.merchants.filter(function(m){ return m.status === 'active'; }).length,
+      pending: state.merchants.filter(function(m){ return m.status === 'pending'; }).length,
+      resting: state.merchants.filter(function(m){ return m.status === 'resting'; }).length,
+      banned: state.merchants.filter(function(m){ return m.status === 'banned'; }).length
+    };
+    var list = state.merchantFilter === 'all' ? state.merchants : state.merchants.filter(function(m){ return m.status === state.merchantFilter; });
+    return '<div class="pc-head"><div><span class="eyebrow">MERCHANTS · 门店</span><h1>商户管理</h1></div><div class="pc-date">共 ' + state.merchants.length + ' 家门店</div></div>' +
+      '<div class="metric-strip"><div class="metric-mini">商户总数<b>' + countsBy.all + '</b></div><div class="metric-mini">营业中<b>' + countsBy.active + '</b></div><div class="metric-mini">待审核<b>' + countsBy.pending + '</b></div><div class="metric-mini">停业 / 封禁<b>' + (countsBy.resting + countsBy.banned) + '</b></div></div>' +
+      '<div class="pc-toolbar"><div class="filter-group">' + filters.map(function(f){
+        return '<button class="filter-chip ' + (state.merchantFilter === f[0] ? 'on' : '') + '" data-action="merchant-filter" data-filter="' + f[0] + '">' + f[1] + '<em>' + countsBy[f[0]] + '</em></button>';
+      }).join('') + '</div><button class="pc-btn" data-action="toast" data-msg="新增商户由商户端提交入驻申请">新增商户</button></div>' +
+      '<table class="admin-table"><thead><tr><th>商户</th><th>类目 / 区域</th><th>状态</th><th>佣金率</th><th>今日订单</th><th>累计结算</th><th>操作</th></tr></thead><tbody>' +
+      (list.length ? list.map(function(m){
+        var sm = merchantStatusMeta(m.status);
+        var actions = '<button class="mini-action" data-action="open-merchant" data-id="' + m.id + '">查看</button>';
+        if(m.status === 'pending') actions += '<button class="mini-action ok" data-action="platform-view" data-view="audit">去审核</button>';
+        if(m.status === 'active') actions += '<button class="mini-action warn" data-action="merchant-status" data-id="' + m.id + '" data-status="resting">停业</button>';
+        if(m.status === 'resting') actions += '<button class="mini-action ok" data-action="merchant-status" data-id="' + m.id + '" data-status="active">恢复</button>';
+        if(m.status === 'banned') actions += '<button class="mini-action ok" data-action="merchant-status" data-id="' + m.id + '" data-status="active">解封</button>';
+        else actions += '<button class="mini-action warn" data-action="merchant-status" data-id="' + m.id + '" data-status="banned">封禁</button>';
+        return '<tr><td><b>' + m.name + '</b><span class="sub">' + m.id + ' · ' + m.contact + '</span></td>' +
+          '<td>' + m.cat + '<span class="sub">' + m.area + '</span></td>' +
+          '<td><span class="status-pill ' + sm.cls + '">' + sm.label + '</span></td>' +
+          '<td class="money">' + m.rate.toFixed(1) + '%</td><td class="money">' + m.orders + '</td><td class="money">¥' + m.settled.toFixed(2) + '</td>' +
+          '<td><div class="row-actions">' + actions + '</div></td></tr>';
+      }).join('') : '<tr><td colspan="7"><div class="table-empty">该状态下暂无商户</div></td></tr>') +
+      '</tbody></table>' +
+      '<div class="pc-note">停业与封禁会立即停止新订单；未履约订单按规则批量取消退款，已履约订单继续售后与结算。</div>';
+  }
+
+  function merchantDrawer(){
+    var m = findMerchant(state.merchantDrawer);
+    if(!m) return '';
+    var sm = merchantStatusMeta(m.status);
+    return '<div class="pc-overlay" data-action="close-drawer"></div>' +
+      '<div class="pc-drawer"><div class="drawer-head"><b>商户详情 · ' + m.name + '</b><button class="drawer-close" data-action="close-drawer">×</button></div>' +
+      '<div class="drawer-body">' +
+        '<div class="drawer-section"><div class="t">BASIC</div><div class="detail-grid">' +
+          '<div class="detail-item">商户号<b>' + m.id + '</b></div><div class="detail-item">状态<b>' + sm.label + '</b></div>' +
+          '<div class="detail-item">经营类目<b>' + m.cat + '</b></div><div class="detail-item">所属区域<b>' + m.area + '</b></div>' +
+          '<div class="detail-item">联系人<b>' + m.contact + '</b></div><div class="detail-item">佣金率<b>' + m.rate.toFixed(1) + '%</b></div>' +
+        '</div></div>' +
+        '<div class="drawer-section"><div class="t">PERFORMANCE</div><div class="detail-grid">' +
+          '<div class="detail-item">今日订单<b>' + m.orders + ' 笔</b></div><div class="detail-item">累计 GMV<b>¥' + m.gmv.toFixed(2) + '</b></div>' +
+          '<div class="detail-item">累计结算<b>¥' + m.settled.toFixed(2) + '</b></div><div class="detail-item">结算账户<b>招商银行 ****6621</b></div>' +
+        '</div></div>' +
+        '<div class="drawer-section"><div class="t">QUALIFICATION</div>' +
+          '<div class="doc-chips"><span>营业执照</span><span>法人证件</span><span>行业许可</span><span>门店照片</span></div>' +
+          '<div class="review-points"><span>主体一致</span><span>证件在有效期</span><span>类目已备案</span></div></div>' +
+        '<div class="drawer-section"><div class="t">OPERATIONS</div>' +
+          '<div class="row-actions">' +
+            (m.status === 'pending' ? '<button class="mini-action ok" data-action="platform-view" data-view="audit">去审核</button>' : '') +
+            (m.status === 'active' ? '<button class="mini-action warn" data-action="merchant-status" data-id="' + m.id + '" data-status="resting">停业</button>' : '') +
+            (m.status === 'resting' ? '<button class="mini-action ok" data-action="merchant-status" data-id="' + m.id + '" data-status="active">恢复营业</button>' : '') +
+            (m.status === 'banned' ? '<button class="mini-action ok" data-action="merchant-status" data-id="' + m.id + '" data-status="active">解除封禁</button>' : '<button class="mini-action warn" data-action="merchant-status" data-id="' + m.id + '" data-status="banned">封禁商户</button>') +
+            '<button class="mini-action" data-action="toast" data-msg="商品管理入口在正式版开放">查看商品</button>' +
+            '<button class="mini-action" data-action="toast" data-msg="佣金调整需超管审批（演示）">调整佣金</button>' +
+          '</div></div>' +
+        '<div class="pc-note">所有状态变更与资金操作都会写入操作日志，并保留变更前后值。</div>' +
+      '</div></div>';
+  }
+
+  function platformOrders(){
+    var orders = getOrders();
+    var countsBy = { all: orders.length, accept: 0, fulfilling: 0, aftersale: 0, done: 0 };
+    orders.forEach(function(o){ countsBy[orderGroup(o.status)] = (countsBy[orderGroup(o.status)] || 0) + 1; });
+    var filters = [['all','全部'],['accept','待接单'],['fulfilling','履约中'],['aftersale','售后中'],['done','已完成']];
+    var visible = state.orderFilter === 'all' ? orders : orders.filter(function(o){ return orderGroup(o.status) === state.orderFilter; });
+    return '<div class="pc-head"><div><span class="eyebrow">ORDERS · MONITOR</span><h1>订单监控</h1></div><div style="display:flex;gap:6px;align-items:center"><span class="pc-date">共 ' + orders.length + ' 笔</span><button class="pc-btn" data-action="toast" data-msg="订单数据已导出（演示）">导出</button></div></div>' +
+      '<div class="metric-strip"><div class="metric-mini">全部订单<b>' + countsBy.all + '</b></div><div class="metric-mini">待接单<b>' + (countsBy.accept || 0) + '</b></div><div class="metric-mini">履约中<b>' + (countsBy.fulfilling || 0) + '</b></div><div class="metric-mini">售后中<b>' + (countsBy.aftersale || 0) + '</b></div></div>' +
+      '<div class="pc-toolbar"><div class="filter-group">' + filters.map(function(f){
+        return '<button class="filter-chip ' + (state.orderFilter === f[0] ? 'on' : '') + '" data-action="order-filter" data-filter="' + f[0] + '">' + f[1] + '<em>' + (countsBy[f[0]] || 0) + '</em></button>';
+      }).join('') + '</div><button class="pc-btn" data-action="toast" data-msg="异常订单筛选在正式版开放">异常订单</button></div>' +
+      '<table class="admin-table"><thead><tr><th>订单号</th><th>商户 / 类型</th><th>用户</th><th>金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead><tbody>' +
+      (visible.length ? visible.map(function(o){
+        return '<tr><td><b>' + o.id + '</b>' + (o.main ? '<span class="sub" style="color:var(--persimmon)">演示主订单</span>' : '') + '</td>' +
+          '<td>' + o.merchant + '<span class="sub">' + o.type + '</span></td><td>' + o.user + '</td>' +
+          '<td class="money">¥' + o.amount.toFixed(2) + '</td><td><span class="status-pill ' + orderPill(o.status) + '">' + o.status + '</span></td><td class="money">' + o.time + '</td>' +
+          '<td><button class="mini-action" data-action="open-order" data-id="' + o.id + '">详情</button></td></tr>';
+      }).join('') : '<tr><td colspan="7"><div class="table-empty">该状态下暂无订单</div></td></tr>') +
+      '</tbody></table>' +
+      '<div class="pc-note">点击订单可查看支付、履约与结算信息；售后争议可直接转入仲裁。</div>';
+  }
+
+  function orderDrawer(){
+    var o = findOrder(state.orderDrawer);
+    if(!o) return '';
+    return '<div class="pc-overlay" data-action="close-drawer"></div>' +
+      '<div class="pc-drawer"><div class="drawer-head"><b>订单详情 · ' + o.id + '</b><button class="drawer-close" data-action="close-drawer">×</button></div>' +
+      '<div class="drawer-body">' +
+        '<div class="drawer-section" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+          '<div><div class="detail-item">订单金额<b style="font-family:var(--mono);font-size:18px;color:var(--persimmon)">¥' + o.amount.toFixed(2) + '</b></div></div>' +
+          '<span class="status-pill ' + orderPill(o.status) + '">' + o.status + '</span></div>' +
+        '<div class="drawer-section"><div class="t">TRANSACTION</div><div class="detail-grid">' +
+          '<div class="detail-item">商户<b>' + o.merchant + '</b></div><div class="detail-item">用户<b>' + o.user + '</b></div>' +
+          '<div class="detail-item">履约方式<b>' + o.type + '</b></div><div class="detail-item">下单时间<b>' + o.time + '</b></div>' +
+          '<div class="detail-item">支付单号<b>' + o.pay + '</b></div><div class="detail-item">支付渠道<b>微信支付</b></div>' +
+        '</div></div>' +
+        (o.main ? '<div class="drawer-section"><div class="t">TIMELINE</div><div class="timeline" style="margin:0">' + timeline() + '</div></div>' : '') +
+        '<div class="drawer-section"><div class="t">SETTLEMENT</div><div class="detail-grid">' +
+          '<div class="detail-item">佣金<b>¥' + (o.amount * 0.05).toFixed(2) + '</b></div><div class="detail-item">商户可结算<b>¥' + (o.amount * 0.95).toFixed(2) + '</b></div>' +
+          '<div class="detail-item">结算状态<b>' + (o.status.indexOf('已结算') > -1 ? '已入账' : '未结算') + '</b></div><div class="detail-item">售后状态<b>' + (o.status === '售后中' ? '处理中' : '无') + '</b></div>' +
+        '</div></div>' +
+        '<div class="drawer-section"><div class="t">OPERATIONS</div><div class="row-actions">' +
+          '<button class="mini-action warn" data-action="order-op" data-op="freeze" data-id="' + o.id + '">冻结结算</button>' +
+          '<button class="mini-action" data-action="order-op" data-op="flag" data-id="' + o.id + '">标记异常</button>' +
+          '<button class="mini-action ok" data-action="order-op" data-op="arbitrate" data-id="' + o.id + '">转仲裁</button>' +
+          '<button class="mini-action" data-action="toast" data-msg="订单凭证已导出（演示）">导出凭证</button>' +
+        '</div></div>' +
+        '<div class="pc-note">冻结结算只影响商户可提现，不影响用户退款与仲裁流程。</div>' +
+      '</div></div>';
+  }
+
+  function ruleField(label, key, unit){
+    return '<div class="rule-field"><label>' + label + '</label><div class="rule-input-wrap"><input class="rule-input" type="number" min="0" data-rule="' + key + '" value="' + state.rules[key] + '"><span class="rule-unit">' + unit + '</span></div></div>';
+  }
+  function ruleSwitch(label, key){
+    return '<div class="rule-field"><label>' + label + '</label><label class="switch"><input type="checkbox" data-rule="' + key + '" ' + (state.rules[key] ? 'checked' : '') + '><span></span></label></div>';
+  }
+
+  function platformRules(){
+    return '<div class="pc-head"><div><span class="eyebrow">POLICY · RULES</span><h1>规则配置</h1></div>' +
+      '<div style="display:flex;gap:6px;align-items:center"><span class="version-chip">当前版本 ' + state.ruleVersion + '</span><button class="pc-btn primary" data-action="save-rules">保存并发布</button></div></div>' +
+      '<div class="rule-grid">' +
+        '<div class="rule-section"><div class="t">佣金与结算</div><div class="d">佣金按订单支付时的快照计算，变更不追溯已支付订单。</div>' +
+          ruleField('默认佣金率', 'commission', '%') + ruleField('结算周期 N 天', 'settlementDays', '天') +
+          ruleField('起提金额', 'minWithdraw', '元') + ruleField('提现手续费', 'withdrawFee', '%') + '</div>' +
+        '<div class="rule-section"><div class="t">履约时限</div><div class="d">超时未接单自动取消退款，超时未发货触发平台介入。</div>' +
+          ruleField('商户接单时限', 'acceptMin', '分钟') + ruleField('实物发货时限', 'shipHours', '小时') +
+          ruleField('自动确认收货', 'autoConfirmDays', '天') + ruleField('服务核销有效期', 'verifyDays', '天') + '</div>' +
+        '<div class="rule-section"><div class="t">预约与核销</div><div class="d">时段容量由商户配置，平台只约束确认与取消时限。</div>' +
+          ruleField('预约确认提前', 'confirmHours', '小时') + ruleField('免费取消提前', 'cancelHours', '小时') +
+          ruleSwitch('允许部分退款', 'partialRefund') + ruleSwitch('允许到店自提', 'allowSelfPickup') + '</div>' +
+        '<div class="rule-section"><div class="t">售后与仲裁</div><div class="d">商户超时未处理自动转平台仲裁，仲裁结论为最终结果。</div>' +
+          ruleField('商户处理时限', 'afterSaleHours', '小时') + ruleField('平台仲裁时限', 'arbitrationHours', '小时') +
+          ruleSwitch('自动接单（服务类）', 'autoAccept') + '</div>' +
+      '</div>' +
+      '<div class="rule-footer"><span class="pc-note" style="margin:0">规则变更需二次确认；保存后生成新版本，并对新支付订单生效。</span><button class="pc-btn primary" data-action="save-rules">保存并发布 ' + state.ruleVersion + ' → 下一版本</button></div>';
+  }
+
+  function platformAnalytics(){
+    var d = ANALYTICS_DATA[state.analyticsPeriod] || ANALYTICS_DATA['7d'];
+    var periods = [['today','今日'],['7d','近 7 日'],['30d','近 30 日']];
+    return '<div class="pc-head"><div><span class="eyebrow">ANALYTICS · 数据统计</span><h1>数据统计</h1></div><div class="period-row">' + periods.map(function(p){
+      return '<button class="filter-chip ' + (state.analyticsPeriod === p[0] ? 'on' : '') + '" data-action="analytics-period" data-period="' + p[0] + '">' + p[1] + '</button>';
+    }).join('') + '</div></div>' +
+      '<div class="pc-kpis" style="grid-template-columns:repeat(3,1fr)">' +
+        '<div class="pc-kpi"><small>GMV</small><b>' + d.gmv + '</b><span>含退款前</span></div>' +
+        '<div class="pc-kpi"><small>净 GMV</small><b>' + d.net + '</b><span>已冲减退款</span></div>' +
+        '<div class="pc-kpi"><small>支付订单</small><b>' + d.orders + '</b><span>笔</span></div>' +
+        '<div class="pc-kpi"><small>核销率</small><b>' + d.verify + '</b><span>服务订单</span></div>' +
+        '<div class="pc-kpi"><small>退款率</small><b>' + d.refund + '</b><span>订单维度</span></div>' +
+        '<div class="pc-kpi"><small>客单价</small><b>' + d.aov + '</b><span>净 GMV / 订单</span></div>' +
+      '</div>' +
+      '<div class="pc-grid">' +
+        '<div class="pc-panel wide"><div class="panel-head"><b>GMV 趋势</b><small>' + (state.analyticsPeriod === 'today' ? 'TODAY' : state.analyticsPeriod.toUpperCase()) + '</small></div>' +
+          '<div class="chart" style="height:120px">' + d.bars.map(function(h){ return '<div style="height:' + h + '%"></div>'; }).join('') + '</div>' +
+          '<div class="chart-x"><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div>日</div></div></div>' +
+        '<div class="pc-panel"><div class="panel-head"><b>类目 GMV 占比</b><small>CATEGORY</small></div>' +
+          '<div class="share-row"><span>餐饮</span><div class="share-track"><div class="share-fill" style="width:38%"></div></div><em>38%</em></div>' +
+          '<div class="share-row"><span>健身</span><div class="share-track"><div class="share-fill" style="width:22%"></div></div><em>22%</em></div>' +
+          '<div class="share-row"><span>洗车</span><div class="share-track"><div class="share-fill" style="width:18%"></div></div><em>18%</em></div>' +
+          '<div class="share-row"><span>美容</span><div class="share-track"><div class="share-fill" style="width:12%"></div></div><em>12%</em></div>' +
+          '<div class="share-row"><span>亲子</span><div class="share-track"><div class="share-fill" style="width:10%"></div></div><em>10%</em></div></div>' +
+        '<div class="pc-panel"><div class="panel-head"><b>区域分布</b><small>AREA</small></div><div class="donut-wrap"><div class="donut"></div>' +
+          '<div class="donut-legend"><div><i style="background:#17594B"></i>西湖区 38%</div><div><i style="background:#3C8A75"></i>拱墅区 22%</div><div><i style="background:#C79A3E"></i>上城区 18%</div><div><i style="background:#C0502E"></i>滨江区 12%</div><div><i style="background:#8C7D67"></i>其他 10%</div></div></div></div>' +
+        '<div class="pc-panel wide"><div class="panel-head"><b>商户排行</b><small>TOP 5</small></div>' +
+          '<table class="admin-table"><thead><tr><th>商户</th><th>GMV</th><th>订单</th><th>核销率</th><th>退款率</th></tr></thead><tbody>' +
+          '<tr><td><b>轻燃健身 · 西溪店</b><span class="sub">健身 / 私教</span></td><td class="money">¥8,750.00</td><td class="money">25</td><td>91.2%</td><td>2.1%</td></tr>' +
+          '<tr><td><b>白露餐厅 · 古荡店</b><span class="sub">餐饮</span></td><td class="money">¥7,680.00</td><td class="money">96</td><td>—</td><td>3.4%</td></tr>' +
+          '<tr><td><b>悦己美容 · 黄龙店</b><span class="sub">美容</span></td><td class="money">¥6,200.00</td><td class="money">31</td><td>78.6%</td><td>6.2%</td></tr>' +
+          '<tr><td><b>清风洗车 · 黄龙店</b><span class="sub">洗车养护</span></td><td class="money">¥5,440.00</td><td class="money">68</td><td>84.1%</td><td>1.8%</td></tr>' +
+          '<tr><td><b>山野咖啡 · 文三店</b><span class="sub">咖啡 / 烘焙</span></td><td class="money">¥3,680.00</td><td class="money">42</td><td>88.4%</td><td>4.0%</td></tr>' +
+          '</tbody></table></div>' +
+      '</div>' +
+      '<div class="pc-note">指标口径与商户端同源；GMV 按支付时间归属，退款按退款完成时间冲减。演示数据不代表真实经营结果。</div>';
+  }
+
+  function platformUsers(){
+    var isUsers = state.contentTab === 'users';
+    var activeUsers = state.users.filter(function(u){ return u.status === 'active'; }).length;
+    return '<div class="pc-head"><div><span class="eyebrow">USERS · CONTENT</span><h1>用户与内容</h1></div><div class="pc-date">注册用户 ' + state.users.length + ' 人</div></div>' +
+      '<div class="pc-tabs"><button data-action="content-tab" data-tab="users" class="' + (isUsers ? 'on' : '') + '">用户管理</button><button data-action="content-tab" data-tab="content" class="' + (!isUsers ? 'on' : '') + '">内容位</button></div>' +
+      '<div class="metric-strip"><div class="metric-mini">注册用户<b>' + state.users.length + '</b></div><div class="metric-mini">正常用户<b>' + activeUsers + '</b></div><div class="metric-mini">封禁用户<b>' + (state.users.length - activeUsers) + '</b></div><div class="metric-mini">内容位在线<b>' + state.content.filter(function(c){ return c.status === 'online'; }).length + '</b></div></div>' +
+      (isUsers ?
+        '<table class="admin-table"><thead><tr><th>用户</th><th>手机号</th><th>订单数</th><th>累计消费</th><th>注册时间</th><th>状态</th><th>操作</th></tr></thead><tbody>' +
+        state.users.map(function(u){
+          return '<tr><td><div class="user-cell"><div class="user-avatar">' + u.name.charAt(0) + '</div><div><b>' + u.name + '</b><span class="sub">' + u.id + '</span></div></div></td>' +
+            '<td class="money">' + u.phone + '</td><td class="money">' + u.orders + '</td><td class="money">¥' + u.gmv.toFixed(2) + '</td><td class="money">' + u.joined + '</td>' +
+            '<td><span class="status-pill ' + (u.status === 'active' ? '' : 'red') + '">' + (u.status === 'active' ? '正常' : '已封禁') + '</span></td>' +
+            '<td><button class="mini-action ' + (u.status === 'active' ? 'warn' : 'ok') + '" data-action="user-status" data-id="' + u.id + '">' + (u.status === 'active' ? '封禁' : '解封') + '</button></td></tr>';
+        }).join('') + '</tbody></table>' +
+        '<div class="pc-note">手机号与地址在后台脱敏展示；封禁用户不可下单，但历史订单仍可查与售后。</div>'
+        :
+        '<div class="content-list">' + state.content.map(function(c){
+          return '<div class="content-row"><div><b>' + c.name + '</b><small>' + c.slot + ' · 更新于 ' + c.updated + '</small></div>' +
+            '<div class="right"><span class="status-pill ' + (c.status === 'online' ? '' : 'grey') + '">' + (c.status === 'online' ? '已上线' : '已下线') + '</span>' +
+            '<button class="mini-action ' + (c.status === 'online' ? 'warn' : 'ok') + '" data-action="content-toggle" data-id="' + c.id + '">' + (c.status === 'online' ? '下线' : '上线') + '</button></div></div>';
+        }).join('') + '</div>' +
+        '<div class="pc-note">内容位变更实时生效；首页 Banner 与类目入口需遵守平台视觉与文案规范。</div>');
+  }
+
+  function platformLogs(){
+    var types = ['全部','交易','资金','审核','规则','售后','商户','用户','运营','系统'];
+    var visible = state.logFilter === '全部' ? state.logs : state.logs.filter(function(l){ return l.type === state.logFilter; });
+    return '<div class="pc-head"><div><span class="eyebrow">AUDIT LOG · 操作日志</span><h1>操作日志与告警</h1></div><button class="pc-btn" data-action="toast" data-msg="日志已导出（演示）">导出日志</button></div>' +
+      '<div class="log-alert"><div class="alert-card"><b>1</b><div>支付回调延迟<br><span style="font-size:8px;opacity:.75">LM202611070001</span></div></div>' +
+      '<div class="alert-card"><b>1</b><div>审核超时<br><span style="font-size:8px;opacity:.75">拾光花店 · 超过 2 小时</span></div></div>' +
+      '<div class="alert-card ok"><b>0</b><div>退款 / 打款失败<br><span style="font-size:8px;opacity:.75">近 24 小时</span></div></div></div>' +
+      '<div class="pc-toolbar"><div class="filter-group">' + types.map(function(t){
+        return '<button class="filter-chip ' + (state.logFilter === t ? 'on' : '') + '" data-action="log-filter" data-filter="' + t + '">' + t + '</button>';
+      }).join('') + '</div><span class="pc-note" style="margin:0">日志不可编辑与删除</span></div>' +
+      '<table class="admin-table"><thead><tr><th>时间</th><th>类型</th><th>操作人</th><th>动作</th><th>对象</th><th>结果</th></tr></thead><tbody>' +
+      (visible.length ? visible.map(function(l){
+        return '<tr><td class="money">' + l.time + '</td><td><span class="type-pill ' + logTypeClass(l.type) + '">' + l.type + '</span></td>' +
+          '<td>' + l.actor + '</td><td>' + l.action + '</td><td>' + l.object + '</td><td>' + l.result + '</td></tr>';
+      }).join('') : '<tr><td colspan="6"><div class="table-empty">该类型暂无日志</div></td></tr>') +
+      '</tbody></table>' +
+      '<div class="pc-note">审核、规则、仲裁、退款、打款、商户状态与用户状态变更均强制留痕。</div>';
+  }
+
+  function renderPlatform(){
+    var el = document.getElementById('platformPC');
+    var view = state.platformView;
+    var main;
+    if(view === 'audit') main = platformAudit();
+    else if(view === 'arbitration') main = platformArbitration();
+    else if(view === 'settlement') main = platformSettlement();
+    else if(view === 'merchants') main = platformMerchants();
+    else if(view === 'orders') main = platformOrders();
+    else if(view === 'rules') main = platformRules();
+    else if(view === 'analytics') main = platformAnalytics();
+    else if(view === 'users') main = platformUsers();
+    else if(view === 'logs') main = platformLogs();
+    else main = platformDashboard();
+    var drawer = '';
+    if(state.merchantDrawer) drawer = merchantDrawer();
+    if(state.orderDrawer) drawer = orderDrawer();
+    el.innerHTML = '<div class="pc-bar"><i></i><i></i><i></i><span class="url">admin.linli.local/' + view + '</span></div>' +
+      '<div class="pc-body">' + platformSide() + '<main class="pc-main">' + main + '</main></div>' + drawer;
+  }
+
+  /* ---------- Rail & Inspector ---------- */
+  function renderRail(){
+    var arr = steps();
+    var activeIndex = -1;
+    for(var i = 0; i < arr.length; i++){
+      if(!arr[i].done){ activeIndex = i; break; }
+    }
+    document.getElementById('railSteps').innerHTML = arr.map(function(s, i){
+      return '<li class="rail-step ' + (s.done ? 'done' : '') + ' ' + (!s.done && i === activeIndex ? 'active' : '') + '">' +
+        '<span class="num">' + (s.done ? '✓' : s.n) + '</span>' +
+        '<div class="t"><b>' + s.title + '</b><small>' + s.sub + '</small></div></li>';
+    }).join('');
+  }
+
+  function renderInspector(){
+    var h = hint();
+    var l = ledger();
+    var c = counts();
+    var sm = statusMeta();
+    document.getElementById('inspectorBody').innerHTML =
+      '<div class="hint"><span class="lbl">NEXT ACTION</span><p>' + h.text + '</p>' +
+        (h.role ? '<button data-action="go-role" data-role="' + h.role + '" data-view="' + h.view + '">' + h.label + ' →</button>' : '') +
+      '</div>' +
+      '<div class="insp-block"><div class="title">订单</div>' +
+        '<div class="insp-row"><span>状态</span><b class="' + (state.orderStatus === 'none' ? '' : 'hot') + '">' + sm.label + '</b></div>' +
+        '<div class="insp-row"><span>订单号</span><b>' + ORDER.id + '</b></div>' +
+        '<div class="insp-row"><span>预约时段</span><b>' + (state.slot || '未选择') + '</b></div>' +
+        '<div class="insp-row"><span>订单金额</span><b>¥88.00</b></div>' +
+      '</div>' +
+      '<div class="insp-block"><div class="title">商户虚拟收入账户</div>' +
+        '<div class="insp-row"><span>待结算</span><b>' + yuan(l.pending) + '</b></div>' +
+        '<div class="insp-row"><span>可提现</span><b>' + yuan(l.withdrawable) + '</b></div>' +
+        '<div class="insp-row"><span>提现中</span><b>' + yuan(l.withdrawing) + '</b></div>' +
+        '<div class="insp-row"><span>已提现</span><b>' + yuan(l.withdrawn) + '</b></div>' +
+      '</div>' +
+      '<div class="insp-block"><div class="title">平台待办</div>' +
+        '<div class="insp-row"><span>待审核</span><b>' + c.audits + '</b></div>' +
+        '<div class="insp-row"><span>待仲裁</span><b>' + c.arbitration + '</b></div>' +
+        '<div class="insp-row"><span>待结算</span><b>' + c.settlement + '</b></div>' +
+        '<div class="insp-row"><span>待打款</span><b>' + c.payout + '</b></div>' +
+      '</div>' +
+      '<div class="insp-foot">佣金 5% = ¥4.40，商户可结算 ¥83.60。演示中结算周期 N 天由平台手动触发。</div>';
+  }
+
+  function renderAll(){
+    Array.prototype.forEach.call(document.querySelectorAll('.role-switch button'), function(b){
+      b.classList.toggle('on', b.getAttribute('data-role') === state.role);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-panel]'), function(p){
+      p.classList.toggle('on', p.getAttribute('data-panel') === state.role);
+    });
+    renderUser();
+    renderMerchant();
+    renderPlatform();
+    renderRail();
+    renderInspector();
+  }
+
+  /* ---------- Actions ---------- */
+  function switchRole(role, view){
+    state.role = role;
+    if(view){
+      if(role === 'user') state.userView = view;
+      if(role === 'merchant') state.merchantView = view;
+      if(role === 'platform') state.platformView = view;
+    }
+    if(role === 'user' && has(state.orderStatus, ['accepted','verified','settled']) && (state.userView === 'success' || state.userView === 'checkout')){
+      state.userView = 'order';
+    }
+    renderAll();
+  }
+
+  document.addEventListener('click', function(e){
+    var el = e.target.closest('[data-action]');
+    if(!el) return;
+    var action = el.getAttribute('data-action');
+
+    if(action === 'switch-role'){
+      switchRole(el.getAttribute('data-role'));
+      return;
+    }
+    if(action === 'go-role'){
+      switchRole(el.getAttribute('data-role'), el.getAttribute('data-view'));
+      return;
+    }
+    if(action === 'toast'){
+      toast(el.getAttribute('data-msg') || '演示功能');
+      return;
+    }
+    if(action === 'reset'){
+      clearTimeout(payTimer);
+      state = initialState();
+      renderAll();
+      toast('演示已重置');
+      return;
+    }
+
+    /* user */
+    if(action === 'open-store'){ state.userView = 'store'; renderAll(); return; }
+    if(action === 'open-product'){ state.userView = 'product'; renderAll(); return; }
+    if(action === 'user-buy'){ state.userView = 'checkout'; renderAll(); return; }
+    if(action === 'user-order'){ state.userView = 'order'; renderAll(); return; }
+    if(action === 'pick-slot'){
+      state.slot = el.getAttribute('data-slot');
+      renderAll();
+      return;
+    }
+    if(action === 'user-back'){
+      var map = { store:'home', product:'store', checkout:'product', order:'home', success:'order' };
+      state.userView = map[state.userView] || 'home';
+      renderAll();
+      return;
+    }
+    if(action === 'user-tab'){
+      var view = el.getAttribute('data-view');
+      if(view === 'category'){ toast('分类页在正式版开放（演示）'); return; }
+      state.userView = view;
+      renderAll();
+      return;
+    }
+    if(action === 'user-pay'){
+      if(!state.slot){ toast('请先选择预约到店时段'); return; }
+      if(state.paying) return;
+      state.paying = true;
+      renderAll();
+      payTimer = setTimeout(function(){
+        state.paying = false;
+        state.orderStatus = 'paid';
+        state.userView = 'success';
+        addLog('交易', '系统', '订单支付成功', ORDER.id, '待接单');
+        renderAll();
+        toast('支付成功，已通知商户接单');
+      }, 1400);
+      return;
+    }
+
+    /* merchant */
+    if(action === 'merchant-view'){
+      state.merchantView = el.getAttribute('data-view');
+      renderAll();
+      return;
+    }
+    if(action === 'merchant-accept'){
+      if(state.orderStatus !== 'paid'){ toast('当前没有待接单订单'); return; }
+      state.orderStatus = 'accepted';
+      state.merchantView = 'home';
+      addLog('交易', '商户 山野咖啡', '接单并确认预约', ORDER.id, '待到店');
+      renderAll();
+      toast('已接单，预约 ' + (state.slot || '16:30') + ' 已确认');
+      return;
+    }
+    if(action === 'fill-code'){
+      state.codeInput = ORDER.code;
+      var input = document.getElementById('codeInput');
+      if(input) input.value = ORDER.code;
+      toast('已填入演示核销码 8842 6619');
+      return;
+    }
+    if(action === 'simulate-scan'){
+      state.codeInput = ORDER.code;
+      var input2 = document.getElementById('codeInput');
+      if(input2) input2.value = ORDER.code;
+      toast('已识别核销码 8842 6619，请确认核销');
+      return;
+    }
+    if(action === 'merchant-verify'){
+      if(state.orderStatus !== 'accepted'){ toast('当前没有待核销订单，请先接单'); return; }
+      var input3 = document.getElementById('codeInput');
+      var code = input3 ? input3.value : state.codeInput;
+      if(normalize(code) !== normalize(ORDER.code)){
+        toast('核销码不匹配，请核对后重试');
+        if(input3){ input3.focus(); input3.select(); }
+        return;
+      }
+      state.orderStatus = 'verified';
+      state.codeInput = '';
+      state.verifyStamp = true;
+      addLog('交易', '商户 店员', '扫码核销成功', ORDER.id, '已核销');
+      renderAll();
+      toast('核销成功，订单已进入待结算');
+      return;
+    }
+    if(action === 'merchant-withdraw'){
+      if(state.orderStatus !== 'settled' || state.withdrawal !== 'none'){ toast('当前不可发起提现'); return; }
+      state.withdrawal = 'requested';
+      addLog('资金', '商户 山野咖啡', '发起提现', ORDER.id, '¥83.60 待审核');
+      renderAll();
+      toast('提现申请已提交，等待平台财务审核');
+      return;
+    }
+
+    /* platform */
+    if(action === 'platform-view'){
+      state.platformView = el.getAttribute('data-view');
+      state.merchantDrawer = null;
+      state.orderDrawer = null;
+      renderAll();
+      return;
+    }
+    if(action === 'merchant-filter'){
+      state.merchantFilter = el.getAttribute('data-filter');
+      renderAll();
+      return;
+    }
+    if(action === 'order-filter'){
+      state.orderFilter = el.getAttribute('data-filter');
+      renderAll();
+      return;
+    }
+    if(action === 'log-filter'){
+      state.logFilter = el.getAttribute('data-filter');
+      renderAll();
+      return;
+    }
+    if(action === 'audit-tab'){
+      state.auditTab = el.getAttribute('data-tab');
+      renderAll();
+      return;
+    }
+    if(action === 'content-tab'){
+      state.contentTab = el.getAttribute('data-tab');
+      renderAll();
+      return;
+    }
+    if(action === 'analytics-period'){
+      state.analyticsPeriod = el.getAttribute('data-period');
+      renderAll();
+      return;
+    }
+    if(action === 'select-case'){
+      state.activeCase = el.getAttribute('data-id');
+      renderAll();
+      return;
+    }
+    if(action === 'open-merchant'){
+      state.merchantDrawer = el.getAttribute('data-id');
+      state.orderDrawer = null;
+      renderAll();
+      return;
+    }
+    if(action === 'open-order'){
+      state.orderDrawer = el.getAttribute('data-id');
+      state.merchantDrawer = null;
+      renderAll();
+      return;
+    }
+    if(action === 'close-drawer'){
+      state.merchantDrawer = null;
+      state.orderDrawer = null;
+      renderAll();
+      return;
+    }
+    if(action === 'merchant-status'){
+      var mid = el.getAttribute('data-id');
+      var toStatus = el.getAttribute('data-status');
+      var merchant = findMerchant(mid);
+      if(!merchant || merchant.status === toStatus) return;
+      merchant.status = toStatus;
+      var targetLabel = merchantStatusMeta(toStatus).label;
+      var logAction = toStatus === 'banned' ? '封禁商户' : toStatus === 'resting' ? '商户停业' : '恢复营业';
+      addLog('商户', '运营 苏禾', logAction, merchant.name, targetLabel);
+      renderAll();
+      toast(merchant.name + ' 已' + targetLabel);
+      return;
+    }
+    if(action === 'order-op'){
+      var op = el.getAttribute('data-op');
+      var opId = el.getAttribute('data-id');
+      var opOrder = findOrder(opId);
+      if(!opOrder) return;
+      var opLabels = { freeze:'冻结结算', flag:'标记异常', arbitrate:'转入仲裁' };
+      addLog('交易', '客服 周岚', opLabels[op] || '订单操作', opId, '已记录');
+      if(op === 'arbitrate'){
+        var matchedCase = CASE_DATA.filter(function(c){ return c.no === opId; })[0];
+        if(matchedCase){
+          state.activeCase = matchedCase.id;
+          state.platformView = 'arbitration';
+          state.orderDrawer = null;
+        }
+      }
+      renderAll();
+      toast(opLabels[op] + '：' + opId);
+      return;
+    }
+    if(action === 'user-status'){
+      var uid = el.getAttribute('data-id');
+      var user = state.users.filter(function(u){ return u.id === uid; })[0];
+      if(!user) return;
+      user.status = user.status === 'active' ? 'banned' : 'active';
+      addLog('用户', '运营 苏禾', user.status === 'banned' ? '封禁用户' : '解封用户', user.name + ' · ' + user.phone, user.status === 'banned' ? '已封禁' : '已解封');
+      renderAll();
+      toast(user.name + (user.status === 'banned' ? ' 已封禁' : ' 已解封'));
+      return;
+    }
+    if(action === 'content-toggle'){
+      var cid = el.getAttribute('data-id');
+      var content = state.content.filter(function(c){ return c.id === cid; })[0];
+      if(!content) return;
+      content.status = content.status === 'online' ? 'offline' : 'online';
+      content.updated = '11-07 ' + nowTime();
+      addLog('运营', '运营 苏禾', content.status === 'online' ? '内容上线' : '内容下线', content.name, content.status === 'online' ? '已上线' : '已下线');
+      renderAll();
+      toast(content.name + (content.status === 'online' ? ' 已上线' : ' 已下线'));
+      return;
+    }
+    if(action === 'save-rules'){
+      state.ruleVersion = bumpVersion(state.ruleVersion);
+      addLog('规则', '超管 陈默', '发布规则版本', state.ruleVersion, '佣金 ' + state.rules.commission + '% · 结算 ' + state.rules.settlementDays + ' 天');
+      renderAll();
+      toast('规则已保存，' + state.ruleVersion + ' 对新支付订单生效');
+      return;
+    }
+    if(action === 'batch-audit'){
+      var batchTab = state.auditTab;
+      var batchIds = batchTab === 'merchant' ? ['merchant'] : ['product', 'product2'];
+      var batchDone = 0;
+      batchIds.forEach(function(bid){
+        if(state.audits[bid] === 'pending'){ state.audits[bid] = 'approved'; batchDone++; }
+      });
+      if(!batchDone){ toast('当前页没有待审核项'); return; }
+      addLog('审核', '审核员 林柯', '批量通过' + (batchTab === 'merchant' ? '商户入驻' : '商品上架'), batchDone + ' 项', '已通过');
+      renderAll();
+      toast('已批量通过 ' + batchDone + ' 项');
+      return;
+    }
+    if(action === 'platform-settle'){
+      if(state.orderStatus !== 'verified'){ toast('当前没有待结算订单'); return; }
+      state.orderStatus = 'settled';
+      addLog('资金', '财务 陈默', '确认结算', ORDER.id, '¥83.60 已入账');
+      renderAll();
+      toast('已结算：¥83.60 进入商户虚拟收入账户');
+      return;
+    }
+    if(action === 'platform-payout'){
+      if(state.withdrawal !== 'requested'){ toast('当前没有待打款提现'); return; }
+      state.withdrawal = 'paid';
+      addLog('资金', '财务 陈默', '线下打款并回填凭证', '山野咖啡 · 招商银行 ****6621', '¥83.60 已打款');
+      renderAll();
+      toast('线下打款已完成，凭证已回填并记账');
+      return;
+    }
+    if(action === 'audit'){
+      var id = el.getAttribute('data-id');
+      var decision = el.getAttribute('data-decision');
+      if(state.audits[id] !== 'pending') return;
+      var auditNames = { merchant:'拾光花店 · 古荡店', product:'双人晚餐套餐 · 白露餐厅', product2:'10 次私教卡 · 轻燃健身' };
+      var auditActions = { merchant:'审核商户入驻', product:'审核商品上架', product2:'审核商品上架' };
+      state.audits[id] = decision;
+      addLog('审核', '审核员 林柯', auditActions[id] || '审核', auditNames[id] || id, decision === 'approved' ? '通过' : '驳回');
+      renderAll();
+      toast(decision === 'approved' ? '审核已通过' : '已驳回并通知商户');
+      return;
+    }
+    if(action === 'arbitration'){
+      var decision2 = el.getAttribute('data-decision');
+      var activeCase = CASE_DATA.filter(function(c){ return c.id === state.activeCase; })[0];
+      if(!activeCase || state.cases[activeCase.id] !== 'open') return;
+      state.cases[activeCase.id] = decision2;
+      var decisionLabel = decision2 === 'refund' ? '判定全额退款' : decision2 === 'partial' ? '判定部分退款' : '驳回售后申请';
+      var decisionAmount = decision2 === 'partial' ? activeCase.amount / 2 : activeCase.amount;
+      addLog('售后', '客服 周岚', decisionLabel, activeCase.no, '已结案');
+      renderAll();
+      toast(decisionLabel + '：' + activeCase.no + (decision2 === 'reject' ? '' : ' · ¥' + decisionAmount.toFixed(2)));
+      return;
+    }
+  });
+
+  document.addEventListener('input', function(e){
+    if(e.target && e.target.id === 'codeInput'){
+      state.codeInput = e.target.value;
+    }
+    if(e.target && e.target.hasAttribute && e.target.hasAttribute('data-rule')){
+      var key = e.target.getAttribute('data-rule');
+      if(e.target.type === 'checkbox'){
+        state.rules[key] = e.target.checked;
+      } else {
+        state.rules[key] = Number(e.target.value) || 0;
+      }
+    }
+  });
+
+  function applyUrlState(){
+    try{
+      var params = new URLSearchParams(window.location.search);
+      var role = params.get('role');
+      if(role === 'merchant' || role === 'platform') state.role = role;
+      var view = params.get('view');
+      if(view){
+        if(state.role === 'platform') state.platformView = view;
+        if(state.role === 'merchant') state.merchantView = view;
+      }
+    }catch(e){}
+  }
+  applyUrlState();
+  renderAll();
+})();
+</script>
+</body>
+</html>

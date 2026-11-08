@@ -1,0 +1,36 @@
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+exclude = ["migrations", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"apps/*/tests.py" = ["B011"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py"]
+testpaths = ["apps"]
+addopts = "-q --strict-markers"
+
+[tool.coverage.run]
+source = ["apps"]
+omit = [
+    "apps/*/migrations/*",
+    "apps/*/apps.py",
+    "apps/*/admin.py",
+    "apps/*/urls.py",
+    "apps/*/__init__.py",
+    "apps/*/tests.py",
+    "apps/*/management/commands/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == \"__main__\":",
+    "raise NotImplementedError",
+]

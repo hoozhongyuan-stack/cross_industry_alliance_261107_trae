@@ -1,0 +1,19 @@
+# 环境与产物
+backend/.venv/
+backend/db.sqlite3
+backend/staticfiles/
+backend/.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 系统与编辑器
+.DS_Store
+.idea/
+.vscode/
+
+# 工具生成的中间产物
+.trae-html-share-packages/
+.screenshots/

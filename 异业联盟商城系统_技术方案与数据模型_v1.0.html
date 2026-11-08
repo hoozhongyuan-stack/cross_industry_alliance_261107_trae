@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>异业联盟商城系统 · 技术方案与数据模型 v1.0</title>
+<style>
+  :root{
+    --paper:#F4F1E8;
+    --surface:#FCFAF3;
+    --surface-2:#F8F4E9;
+    --ink:#121C17;
+    --ink-2:#3F4E46;
+    --muted:#7E7668;
+    --line:#DCD5C5;
+    --line-2:#C8BFA9;
+    --jade:#0E6B5A;
+    --jade-deep:#0A3D33;
+    --jade-soft:#E3F0EA;
+    --amber:#B77A1F;
+    --amber-soft:#F6E9D2;
+    --blue:#2F5D7C;
+    --blue-soft:#E7EFF5;
+    --red:#A63D33;
+    --red-soft:#F8E6E2;
+    --display:"Songti SC","Noto Serif SC","STSong",serif;
+    --body:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    --mono:"SFMono-Regular","Menlo","Consolas",monospace;
+    --radius:14px;
+    --shadow:0 20px 50px -30px rgba(10,35,29,.42);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.72;
+    background:
+      radial-gradient(1000px 600px at 88% -8%,rgba(47,93,124,.08),transparent 55%),
+      radial-gradient(800px 500px at 4% 18%,rgba(14,107,90,.06),transparent 55%),
+      var(--paper);
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.045;
+    background-image:linear-gradient(rgba(18,28,23,.35) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(18,28,23,.35) 1px,transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(ellipse at 50% 20%,#000 10%,transparent 80%);
+  }
+  .progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:70}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--jade),var(--amber));transition:.1s linear}
+
+  /* ---------- Cover ---------- */
+  .cover{
+    position:relative;overflow:hidden;color:#F1F6F2;padding:78px 32px 62px;
+    background:
+      radial-gradient(ellipse at 18% 0%,rgba(20,105,88,.48),transparent 55%),
+      radial-gradient(ellipse at 92% 86%,rgba(183,122,31,.24),transparent 52%),
+      linear-gradient(135deg,#0B211C,#0E2B24 58%,#0A1814);
+  }
+  .cover::before{
+    content:"";position:absolute;inset:0;opacity:.20;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.22) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.22) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(ellipse at 45% 35%,#000 10%,transparent 78%);
+  }
+  .cover-inner{position:relative;max-width:1120px;margin:0 auto}
+  .cover-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:#A9C8BD}
+  .cover h1{font-family:var(--display);font-size:clamp(34px,5vw,56px);line-height:1.18;margin:18px 0 12px;font-weight:600;letter-spacing:.04em}
+  .cover-sub{font-size:clamp(14px,1.8vw,18px);color:#CFE1D9;margin:0 0 28px;letter-spacing:.04em}
+  .cover-meta{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:38px}
+  .cover-meta span{font-size:11.5px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#DCEBE5}
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .pillar{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);border-radius:12px;padding:16px 17px;backdrop-filter:blur(4px)}
+  .pillar .k{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:#9FBDB1;display:block;margin-bottom:5px}
+  .pillar b{display:block;font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:.03em}
+  .pillar p{margin:3px 0 0;font-size:10.5px;color:#B9D0C7;line-height:1.6}
+
+  /* ---------- Layout ---------- */
+  .wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:46px 28px 90px;display:grid;grid-template-columns:216px minmax(0,1fr);gap:50px}
+  .toc{position:sticky;top:34px;align-self:start;font-size:12.5px}
+  .toc-title{font-family:var(--display);font-size:17px;margin:0 0 12px;padding-left:14px}
+  .toc nav{display:flex;flex-direction:column;border-left:1px solid var(--line-2)}
+  .toc nav a{color:var(--ink-2);text-decoration:none;padding:6px 10px 6px 14px;border-left:2px solid transparent;margin-left:-1px;line-height:1.5;transition:.18s}
+  .toc nav a:hover{color:var(--jade);background:rgba(14,107,90,.05)}
+  .toc nav a.is-active{color:var(--jade-deep);border-left-color:var(--jade);background:rgba(14,107,90,.07);font-weight:600}
+  .toc nav a.sub{padding-left:26px;font-size:11.5px;color:var(--muted)}
+  .toc-foot{margin-top:16px;padding-left:14px;font-size:10.5px;color:var(--muted);line-height:1.6}
+  main{min-width:0}
+  .sec{padding-top:6px;margin-bottom:64px;scroll-margin-top:26px}
+  .sec-intro{display:flex;align-items:baseline;gap:13px;margin-bottom:8px}
+  .sec-no{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--amber);white-space:nowrap}
+  .sec h2{font-family:var(--display);font-size:clamp(25px,3vw,33px);font-weight:600;margin:0;line-height:1.28;letter-spacing:.02em}
+  .lede{font-size:14px;color:var(--ink-2);max-width:840px;margin:10px 0 24px}
+  .lede strong{color:var(--ink)}
+  h3.sub{font-family:var(--display);font-size:20px;font-weight:600;margin:36px 0 12px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink)}
+  h4{font-size:14px;font-weight:600;margin:20px 0 8px;color:var(--jade-deep)}
+
+  /* ---------- Blocks ---------- */
+  .callout{border:1px solid var(--line);border-left:3px solid var(--amber);background:var(--surface);border-radius:0 10px 10px 0;padding:15px 19px;margin:18px 0;font-size:12.8px;color:var(--ink-2)}
+  .callout.teal{border-left-color:var(--jade);background:var(--jade-soft)}
+  .callout.blue{border-left-color:var(--blue);background:var(--blue-soft)}
+  .callout.red{border-left-color:var(--red);background:var(--red-soft)}
+  .callout .label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;margin-bottom:4px;color:var(--amber)}
+  .callout.teal .label{color:var(--jade)}
+  .callout.blue .label{color:var(--blue)}
+  .callout.red .label{color:var(--red)}
+  .callout b{color:var(--ink)}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .card .k{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--amber);margin-bottom:5px}
+  .card h4{margin:0 0 5px;font-size:14px;color:var(--ink)}
+  .card p{margin:0;font-size:12.3px;color:var(--ink-2);line-height:1.65}
+  .pill{display:inline-block;font-size:9.5px;font-family:var(--mono);padding:1px 7px;border-radius:999px;background:var(--jade-soft);color:var(--jade-deep);border:1px solid #CBE0D5;white-space:nowrap}
+  .pill.amber{background:var(--amber-soft);color:#83530F;border-color:#E8D4AD}
+  .pill.blue{background:var(--blue-soft);color:var(--blue);border-color:#CFDDE8}
+  .pill.red{background:var(--red-soft);color:var(--red);border-color:#E8CCC5}
+  .pill.grey{background:#ECE7DB;color:var(--muted);border-color:var(--line)}
+  .tbd{background:var(--amber-soft);color:#83530F;padding:0 4px;border-radius:3px;font-size:11.5px}
+
+  /* ---------- Tables ---------- */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:14px 0 20px}
+  table{width:100%;border-collapse:collapse;font-size:12.3px;min-width:660px}
+  th,td{padding:9px 11px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);line-height:1.6}
+  th{background:#EDE8DA;font-size:10.5px;font-weight:600;letter-spacing:.04em;color:var(--ink);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  td.mono,th.mono{font-family:var(--mono);font-size:10.5px;color:var(--jade-deep)}
+  td strong{color:var(--ink)}
+  .spec td:first-child{font-family:var(--mono);font-size:10.5px;color:var(--jade-deep);white-space:nowrap}
+  .fineprint{font-size:11px;color:var(--muted);margin:-8px 0 18px}
+  .mini{margin:0;padding-left:15px}
+  .mini li{margin:2px 0}
+
+  /* ---------- Architecture ---------- */
+  .arch{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:16px 18px;margin:16px 0}
+  .arch-row{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .arch-row:last-child{border-bottom:0}
+  .arch-label{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+  .arch-nodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:6px}
+  .node{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:10.5px;color:var(--ink-2);line-height:1.45}
+  .node b{display:block;font-size:11px;color:var(--ink);margin-bottom:1px}
+  .node small{display:block;font-size:8.5px;color:var(--muted)}
+  .node.accent{background:var(--jade-soft);border-color:#CBE0D5}
+  .node.blue{background:var(--blue-soft);border-color:#CFDDE8}
+  .node.dark{background:var(--ink);border-color:var(--ink);color:#F2EEE3}
+  .node.dark b{color:#F7F2E6}
+  .node.dark small{color:#AEC4BA}
+  .arch-arrow{text-align:center;color:var(--amber);font-family:var(--mono);font-size:11px;padding:1px 0}
+
+  /* ---------- Domain grid ---------- */
+  .domain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+  .domain-card{border:1px solid var(--line);border-radius:11px;background:var(--surface);padding:12px 13px}
+  .domain-card h4{margin:0 0 7px;font-size:12.5px;color:var(--jade-deep)}
+  .entity{display:block;font-family:var(--mono);font-size:9.5px;color:var(--ink-2);padding:3px 0;border-top:1px dotted var(--line)}
+  .entity:first-of-type{border-top:0}
+  .entity em{font-style:normal;color:var(--muted)}
+
+  /* ---------- State flow ---------- */
+  .state-flow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:14px 0}
+  .state-flow .st{font-size:10px;padding:4px 9px;border-radius:5px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+  .state-flow .st.start{background:var(--blue-soft);border-color:#CFDDE8;color:var(--blue)}
+  .state-flow .st.end{background:var(--jade-soft);border-color:#CBE0D5;color:var(--jade-deep)}
+  .state-flow .st.risk{background:var(--red-soft);border-color:#E8CCC5;color:var(--red)}
+  .state-flow .arr{color:var(--amber);font-size:11px}
+
+  /* ---------- Journal ---------- */
+  .tabs{margin:16px 0}
+  .tabbar{display:inline-flex;gap:3px;padding:4px;background:#E8E2D4;border-radius:9px;margin-bottom:14px}
+  .tabbar button{appearance:none;border:0;background:transparent;padding:6px 13px;border-radius:7px;font-family:var(--body);font-size:11.5px;color:var(--ink-2);cursor:pointer}
+  .tabbar button.is-on{background:var(--surface);color:var(--jade-deep);font-weight:600;box-shadow:0 2px 8px rgba(18,28,23,.08)}
+  [data-tab-panel]{display:none}
+  [data-tab-panel].is-on{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .journal{background:var(--surface);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .journal-head{display:grid;grid-template-columns:2.1fr 1fr 1fr 1.6fr;background:#EDE8DA;font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;color:var(--ink-2)}
+  .journal-head span{padding:8px 11px;border-right:1px solid var(--line)}
+  .journal-head span:last-child{border:0}
+  .journal-row{display:grid;grid-template-columns:2.1fr 1fr 1fr 1.6fr;border-top:1px solid var(--line);font-size:11.5px}
+  .journal-row > span{padding:8px 11px;border-right:1px solid var(--line);color:var(--ink-2)}
+  .journal-row > span:last-child{border:0;color:var(--muted);font-size:10.5px}
+  .journal-row .dr{font-family:var(--mono);color:var(--blue);text-align:right}
+  .journal-row .cr{font-family:var(--mono);color:var(--jade);text-align:right}
+  .journal-row.total{background:#F8F4E9;font-weight:600}
+  .journal-row.total .dr,.journal-row.total .cr{color:var(--ink)}
+  .journal-note{padding:9px 11px;background:#F8F4E9;border-top:1px solid var(--line);font-size:10.5px;color:var(--muted)}
+
+  /* ---------- Schema ---------- */
+  .schema{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:12px 0;overflow:hidden}
+  .schema-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 14px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+  .schema-head b{font-family:var(--mono);font-size:12px;color:var(--jade-deep)}
+  .schema-head span{font-size:10px;color:var(--muted)}
+  .schema table{min-width:520px;font-size:10.8px}
+  .schema td:first-child{font-family:var(--mono);color:var(--jade-deep);white-space:nowrap;width:150px}
+  .schema td:nth-child(2){font-family:var(--mono);color:var(--muted);white-space:nowrap;width:110px}
+  .schema td{padding:6px 11px}
+  .schema th{padding:6px 11px;font-size:9px}
+
+  /* ---------- API ---------- */
+  .endpoint{font-family:var(--mono);font-size:10px;white-space:nowrap}
+  .method{display:inline-block;font-family:var(--mono);font-size:8.5px;padding:1px 5px;border-radius:3px;margin-right:4px;border:1px solid}
+  .method.get{color:var(--blue);background:var(--blue-soft);border-color:#CFDDE8}
+  .method.post{color:var(--jade);background:var(--jade-soft);border-color:#CBE0D5}
+  .method.put{color:#83530F;background:var(--amber-soft);border-color:#E8D4AD}
+  .method.del{color:var(--red);background:var(--red-soft);border-color:#E8CCC5}
+  .code{font-family:var(--mono);font-size:10px;background:#F8F4E9;border:1px solid var(--line);border-radius:6px;padding:2px 5px;color:var(--ink-2)}
+  .codeblock{font-family:var(--mono);font-size:11px;line-height:1.8;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 16px;color:var(--ink-2);overflow-x:auto;white-space:pre}
+
+  /* ---------- Misc ---------- */
+  .kicker{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--amber);text-transform:uppercase;margin-bottom:5px}
+  .tagline{font-size:11.5px;color:var(--muted)}
+  .principles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+  .principle{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+  .principle b{display:block;font-size:12.5px;color:var(--ink);margin-bottom:3px}
+  .principle p{margin:0;font-size:11px;color:var(--muted);line-height:1.6}
+  .principle .n{font-family:var(--mono);font-size:9px;color:var(--amber);display:block;margin-bottom:4px}
+  .timeline-list{margin:0;padding:0;list-style:none}
+  .timeline-list li{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .timeline-list li:last-child{border:0}
+  .timeline-list .n{width:24px;height:24px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .timeline-list b{display:block;font-size:12px;color:var(--ink);margin-bottom:1px}
+  .timeline-list small{display:block;font-size:10.5px;color:var(--muted);line-height:1.6}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:1080px){
+    .wrap{grid-template-columns:1fr;gap:24px;padding:30px 20px 70px}
+    .toc{position:static;border-bottom:1px solid var(--line);padding-bottom:14px}
+    .toc nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));border-left:0}
+    .toc nav a{padding:5px 8px;border-left:0}
+    .toc nav a.is-active{background:var(--jade-soft);border-radius:6px}
+    .toc nav a.sub{padding-left:8px}
+    .pillars{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:720px){
+    .cover{padding:54px 20px 44px}
+    .pillars,.grid-2,.grid-3,.domain-grid,.principles{grid-template-columns:1fr}
+    .arch-row{grid-template-columns:1fr;gap:7px}
+    .journal-head,.journal-row{grid-template-columns:1.5fr .8fr .8fr 1.2fr}
+    .schema table{min-width:0}
+  }
+  @media print{
+    .progress,.toc{display:none}
+    .wrap{display:block;max-width:none;padding:0}
+    .cover{padding:40px}
+    body{background:#fff}
+    table{font-size:9.5px}
+  }
+</style>
+</head>
+<body>
+<div class="progress"><i id="progressBar"></i></div>
+
+<header class="cover" id="top">
+  <div class="cover-inner">
+    <div class="cover-kicker">TECHNICAL DESIGN · MVP v1.0</div>
+    <h1>技术方案与数据模型</h1>
+    <p class="cover-sub">异业联盟商城系统 · 模块化单体 · 交易与虚拟账户 · 结算与提现</p>
+    <div class="cover-meta">
+      <span>关联 PRD v0.2</span>
+      <span>关联原型 v1</span>
+      <span>状态：T1–T10 已确认（局部 TBD）</span>
+      <span>更新：2026-11-07</span>
+      <span>范围：P0 / MVP</span>
+    </div>
+    <div class="pillars">
+      <div class="pillar"><span class="k">DECISION 01</span><b>模块化单体</b><p>P0 不拆微服务，按领域模块隔离，保留拆分边界。</p></div>
+      <div class="pillar"><span class="k">DECISION 02</span><b>金额整数分</b><p>所有金额以 BIGINT 存储“分”，禁止浮点与四舍五入误差。</p></div>
+      <div class="pillar"><span class="k">DECISION 03</span><b>复式记账</b><p>虚拟账户与平台现金通过借贷必平的流水驱动。</p></div>
+      <div class="pillar"><span class="k">DECISION 04</span><b>状态机驱动</b><p>订单、售后、结算、提现只能按允许的迁移路径变更。</p></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="toc">
+    <div class="toc-title">目录</div>
+    <nav id="tocNav">
+      <a href="#s0">00 · 文档与原则</a>
+      <a href="#s1">01 · 目标与约束</a>
+      <a href="#s2">02 · 总体架构</a>
+      <a href="#s3">03 · 模块划分</a>
+      <a href="#s4">04 · 核心流程与状态机</a>
+      <a href="#s4-1" class="sub">4.1 下单与支付</a>
+      <a href="#s4-2" class="sub">4.2 履约与核销</a>
+      <a href="#s4-3" class="sub">4.3 售后与仲裁</a>
+      <a href="#s4-4" class="sub">4.4 结算与提现</a>
+      <a href="#s5">05 · 数据模型</a>
+      <a href="#s6">06 · 资金记账设计</a>
+      <a href="#s7">07 · 接口设计</a>
+      <a href="#s8">08 · 并发与一致性</a>
+      <a href="#s9">09 · 安全与审计</a>
+      <a href="#s10">10 · 可观测性与部署</a>
+      <a href="#s11">11 · 确认结论</a>
+    </nav>
+    <div class="toc-foot">本文定义技术实现与数据结构，不替代产品需求文档；业务规则以 PRD v0.2 为准。</div>
+  </aside>
+
+  <main>
+
+    <section class="sec" id="s0">
+      <div class="sec-intro"><span class="sec-no">00</span><h2>文档与设计原则</h2></div>
+      <p class="lede">这份文档回答三个问题：<strong>系统怎么分层、数据怎么建模、钱怎么记</strong>。P0 的目标不是搭一个“大而全”的架构，而是用最少的组件把一笔本地服务订单从支付、履约、核销、售后退款到结算提现完整跑通，并保证每一步可追溯、可对账。</p>
+
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:130px">项目</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td>文档版本</td><td>v1.0 · 技术方案与数据模型（已回填 T1–T10 确认结论）</td></tr>
+            <tr><td>关联文档</td><td>《异业联盟商城系统 PRD v0.2》《异业联盟商城系统 交互原型 v1》</td></tr>
+            <tr><td>适用阶段</td><td>P0 / MVP 开发前评审；后续迭代在此基础上扩展</td></tr>
+            <tr><td>不在本文范围</td><td>界面视觉设计、项目排期、人员分工、市场与运营方案</td></tr>
+            <tr><td>技术选型</td><td>后端已确认：<strong>Python 3.9 + Django 4.2 LTS + DRF</strong>（模块化单体）；数据库 MySQL 8.0。领域设计不绑定语言，但 P0 以该栈落地</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">设计原则</h3>
+      <div class="principles">
+        <div class="principle"><span class="n">P1</span><b>模块化单体优先</b><p>按领域划分模块与表归属，模块内高内聚；P0 不引入服务间网络调用与分布式事务。</p></div>
+        <div class="principle"><span class="n">P2</span><b>交易强一致，通知最终一致</b><p>订单、支付、退款、记账在同一数据库事务内完成；通知、统计、内容分发走异步。</p></div>
+        <div class="principle"><span class="n">P3</span><b>金额只用整数分</b><p>数据库统一 BIGINT 分，接口统一整数分，展示层格式化；佣金四舍五入到分并记录尾差。</p></div>
+        <div class="principle"><span class="n">P4</span><b>状态机驱动</b><p>禁止直接 UPDATE 状态字段；每次迁移必须携带 from-status 条件与业务事件。</p></div>
+        <div class="principle"><span class="n">P5</span><b>幂等与可重试</b><p>支付回调、退款、结算、提现、创建订单全部支持幂等键；失败可安全重试。</p></div>
+        <div class="principle"><span class="n">P6</span><b>全链路可追溯</b><p>资金、状态、审核、规则变更均留流水与操作日志；不允许物理删除业务记录。</p></div>
+      </div>
+
+      <div class="callout blue">
+        <span class="label">与 PRD 的对应关系</span>
+        产品侧的“平台收款 + 商户虚拟收入账户 + 财务线下打款 + 订单完成 N 天后结算”在技术上落地为：<strong>平台现金账户 + 商户四类余额账户 + 复式记账流水 + 结算批次 + 提现单与打款凭证</strong>。业务状态与资金状态分开建模，避免“订单完成了但钱没记上”的中间态。
+      </div>
+    </section>
+
+    <section class="sec" id="s1">
+      <div class="sec-intro"><span class="sec-no">01</span><h2>目标与约束</h2></div>
+      <p class="lede">技术方案必须服从已经确认的业务边界；以下约束直接决定模型复杂度，开发中不得擅自放宽。</p>
+
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:150px">约束</th><th>对技术方案的影响</th></tr></thead>
+          <tbody>
+            <tr><td>单店单订单</td><td>一笔支付只对应一个商户，不需要跨商户拆单与合并支付；分账模型可退化为“单商户虚拟账户”。</td></tr>
+            <tr><td>平台微信收款</td><td>平台使用微信支付商户号收款；商户号、APIv3 密钥与证书由平台 PC 后台配置（T2 已确认），代码只读配置、不硬编码。系统不调起服务商分账，只做内部记账；退款从平台账户原路退回。</td></tr>
+            <tr><td>商户虚拟收入账户</td><td>每个商户一个账户，至少包含待结算、冻结、可提现、提现中四类余额；账户余额与流水必须可对账。</td></tr>
+            <tr><td>财务线下打款</td><td>P0 采用<strong>人工网银转账 + 回单上传</strong>（T7 已确认），不接银行代付/批量转账；系统生成提现单、财务审核、回填回单号与凭证 URL 后记账。</td></tr>
+            <tr><td>结算周期 N 天</td><td>N 默认 7 天，平台 PC 后台可按商户配置（T8 已确认）；订单完成后生成结算项，<span class="code">due_at = completed_at + N 天</span>，到期进入结算批次。</td></tr>
+            <tr><td>小程序 + H5</td><td>同一套消费者 API；登录与支付方式按端区分；账户按 unionid 合并。H5 域名、ICP 与微信内 H5 支付均已具备（T4 已确认）。</td></tr>
+            <tr><td>商户中心复用小程序</td><td>同一个微信小程序；商户中心是「个人中心」内的一个菜单，按角色路由进入；商户身份与消费者身份分离鉴权（T5 已确认）。</td></tr>
+            <tr><td>P0 无优惠券 / 会员 / 跨店</td><td>P0 不支持跨店购物车、连锁多门店、会员积分与优惠分摊（T10 已确认）；扩展时新增订单组 / 商户层级，不修改 P0 核心表语义。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">技术选型（T1 已确认）</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:150px">层次</th><th style="width:230px">选型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>后端</td><td><strong>Python 3.9 + Django 4.2 LTS + DRF</strong></td><td>已确认。模块化单体；领域模型、状态机与复式记账按本文实现，不引入微服务。</td></tr>
+            <tr><td>数据库</td><td>MySQL 8.0</td><td>交易与账务主库；金额 BIGINT 分；事务隔离级别默认 READ COMMITTED。</td></tr>
+            <tr><td>支付</td><td>微信支付 V3（平台商户号）</td><td>商户号、APIv3 密钥、证书由平台 PC 后台配置并加密保存（T2 已确认）；代码只读配置，禁止硬编码。P0 不做服务商分账与银行代付。</td></tr>
+            <tr><td>地图 / 地址</td><td><strong>高德地图</strong></td><td>门店定位、地址解析与距离计算（T6 已确认）；Web 服务 Key 按环境配置，不写入前端代码。</td></tr>
+            <tr><td>短信</td><td>服务商待定 <span class="tbd">[TBD]</span></td><td>验证码登录与订单通知；先定义统一 <span class="code">SmsProvider</span> 接口，接入时只替换适配器，不改业务代码。</td></tr>
+            <tr><td>缓存</td><td>Redis 7</td><td>门店/商品缓存、验证码、限流、任务锁；不承担资金余额的权威存储。</td></tr>
+            <tr><td>消息与任务</td><td>P0：DB Outbox + 调度器；P1：RocketMQ / RabbitMQ</td><td>P0 避免引入额外中间件；Outbox 保证事件至少一次投递。</td></tr>
+            <tr><td>对象存储</td><td>OSS / COS</td><td>商品图、资质、售后凭证、打款回单；私有读 + 临时签名 URL。</td></tr>
+            <tr><td>管理端</td><td>Vue 3 + TypeScript</td><td>与原型视觉解耦；按 RBAC 动态路由。</td></tr>
+            <tr><td>小程序 / H5</td><td>原生小程序或 Taro；H5 与小程序共用 API</td><td>消费者与商户中心共用小程序包，通过角色路由拆分页面与权限。</td></tr>
+            <tr><td>调度</td><td>应用内定时任务 + 数据库租约锁</td><td>单实例执行或选主执行；P0 不引入独立调度平台。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fineprint">后端选型已确认（T1）；短信服务商、提现手续费率等局部参数仍为 TBD，不阻塞主流程开发。</p>
+    </section>
+
+    <section class="sec" id="s2">
+      <div class="sec-intro"><span class="sec-no">02</span><h2>总体架构</h2></div>
+      <p class="lede">采用<strong>前后端分离 + 模块化单体</strong>：三端各自接入，后端共享领域服务与数据库；P0 不拆微服务，但模块边界、事件与表归属必须清晰，为后续拆分保留空间。</p>
+
+      <div class="arch">
+        <div class="arch-row">
+          <div class="arch-label">接入层</div>
+          <div class="arch-nodes">
+            <div class="node accent"><b>微信小程序</b><small>消费者 / 商户中心</small></div>
+            <div class="node accent"><b>H5</b><small>微信内 / 浏览器</small></div>
+            <div class="node accent"><b>PC 管理后台</b><small>平台运营 / 财务 / 客服</small></div>
+          </div>
+        </div>
+        <div class="arch-arrow">↓ HTTPS · JSON · Token</div>
+        <div class="arch-row">
+          <div class="arch-label">接入服务</div>
+          <div class="arch-nodes">
+            <div class="node blue"><b>Consumer API</b><small>登录 / 门店 / 商品 / 订单</small></div>
+            <div class="node blue"><b>Merchant API</b><small>入驻 / 商品 / 履约 / 核销</small></div>
+            <div class="node blue"><b>Admin API</b><small>审核 / 仲裁 / 规则 / 结算</small></div>
+            <div class="node"><b>统一鉴权</b><small>JWT / RBAC / 限流 / 幂等</small></div>
+          </div>
+        </div>
+        <div class="arch-arrow">↓ 领域服务调用（进程内）</div>
+        <div class="arch-row">
+          <div class="arch-label">领域模块</div>
+          <div class="arch-nodes">
+            <div class="node"><b>用户与商户</b><small>身份 / 门店 / 资质</small></div>
+            <div class="node"><b>商品与类目</b><small>SKU / 时段 / 审核</small></div>
+            <div class="node"><b>交易与支付</b><small>订单 / 微信支付 / 退款</small></div>
+            <div class="node"><b>履约与核销</b><small>配送 / 自提 / 预约 / 核销</small></div>
+            <div class="node"><b>售后与仲裁</b><small>申请 / 举证 / 判定</small></div>
+            <div class="node"><b>资金与结算</b><small>虚拟账户 / 流水 / 提现</small></div>
+            <div class="node"><b>治理</b><small>规则版本 / 审核 / 日志</small></div>
+            <div class="node"><b>内容与通知</b><small>Banner / 订阅消息 / 站内信</small></div>
+          </div>
+        </div>
+        <div class="arch-arrow">↓ 事务 / 缓存 / 对象存储 / 事件</div>
+        <div class="arch-row">
+          <div class="arch-label">基础设施</div>
+          <div class="arch-nodes">
+            <div class="node dark"><b>MySQL</b><small>交易 · 账务 · 配置</small></div>
+            <div class="node dark"><b>Redis</b><small>缓存 · 限流 · 任务锁</small></div>
+            <div class="node dark"><b>对象存储</b><small>图片 · 凭证 · 回单</small></div>
+            <div class="node"><b>Outbox + 调度器</b><small>超时 · 结算 · 通知</small></div>
+            <div class="node"><b>微信平台</b><small>登录 · 支付 · 订阅消息</small></div>
+            <div class="node"><b>高德地图 / 短信</b><small>定位 · 地址 · 验证码（短信 TBD）</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="k">REQUEST PATH</span>
+          <h4>一次用户下单经过什么</h4>
+          <p>小程序 → Consumer API → 鉴权 → 交易模块创建订单 → 库存/时段预占 → 调微信支付下单 → 返回 prepay_id → 微信回调 → 支付模块幂等处理 → 发 <span class="pill">OrderPaid</span> 事件 → 履约模块生成核销码/预约 → 通知模块推送商户。</p>
+        </div>
+        <div class="card">
+          <span class="k">WHY MONOLITH</span>
+          <h4>P0 不拆微服务</h4>
+          <p>订单、支付、退款、记账需要同一事务边界；拆成服务会引入分布式事务、补偿与链路追踪成本。先以模块化单体交付，等结算/通知/统计出现独立扩容需求再拆。</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="label">关键边界</span>
+        模块之间不允许直接修改对方的表：交易模块只能调用资金模块的记账接口，资金模块只能消费支付/退款/结算事件。报表可以跨表只读查询，但写操作必须回到模块归属。
+      </div>
+    </section>
+
+    <section class="sec" id="s3">
+      <div class="sec-intro"><span class="sec-no">03</span><h2>模块划分</h2></div>
+      <p class="lede">模块按“业务能力 + 数据归属”划分。每个模块拥有自己的表、服务接口和对外事件；跨模块协作优先用事件与接口，而不是共享表写入。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:110px">模块</th><th>职责</th><th style="width:240px">拥有的核心表</th><th style="width:150px">对外事件</th></tr></thead>
+          <tbody>
+            <tr><td><strong>身份与用户</strong></td><td>小程序/H5 登录、unionid 合并、用户资料、地址、封禁</td><td>app_user, user_identity, user_address</td><td>UserRegistered</td></tr>
+            <tr><td><strong>商户</strong></td><td>入驻申请、门店信息、资质、店员、营业状态、结算账户</td><td>merchant, merchant_staff, merchant_qualification</td><td>MerchantActivated, MerchantSuspended</td></tr>
+            <tr><td><strong>商品与类目</strong></td><td>类目、商品、SKU、库存、服务时段模板、上下架</td><td>category, product, product_sku, service_slot_template, service_slot</td><td>ProductOnSale, ProductOffSale</td></tr>
+            <tr><td><strong>交易</strong></td><td>购物车/结算（单店）、订单创建、价格快照、订单状态机</td><td>order, order_item, order_status_log</td><td>OrderCreated, OrderPaid, OrderAccepted, OrderCompleted, OrderClosed</td></tr>
+            <tr><td><strong>支付</strong></td><td>微信支付下单、回调验签、支付单、退款单、对账</td><td>payment_order, refund_order</td><td>PaymentSucceeded, RefundSucceeded, RefundFailed</td></tr>
+            <tr><td><strong>履约</strong></td><td>发货、自提、预约、核销码、确认收货、爽约</td><td>order_delivery, verify_code, appointment</td><td>OrderShipped, OrderVerified, AppointmentConfirmed</td></tr>
+            <tr><td><strong>售后</strong></td><td>售后申请、商户处理、平台仲裁、举证、退款触发</td><td>after_sale, arbitration_case, arbitration_evidence</td><td>AfterSaleApplied, ArbitrationResolved</td></tr>
+            <tr><td><strong>资金</strong></td><td>商户虚拟账户、复式流水、冻结、结算、提现、对账</td><td>merchant_account, ledger_transaction, ledger_entry, settlement_batch, settlement_item, withdrawal_order, account_adjustment</td><td>SettlementPublished, WithdrawalPaid</td></tr>
+            <tr><td><strong>治理</strong></td><td>规则版本、审核任务、操作日志、告警</td><td>rule_version, audit_task, operation_log</td><td>RulePublished</td></tr>
+            <tr><td><strong>内容与通知</strong></td><td>Banner、类目入口、推荐位、订阅消息、站内信</td><td>content_slot, content_item, notification, outbox_event</td><td>NotificationSent</td></tr>
+            <tr><td><strong>评价</strong></td><td>订单评价、评分、图片、展示脱敏</td><td>order_review</td><td>ReviewPublished</td></tr>
+            <tr><td><strong>后台权限</strong></td><td>后台账号、角色、权限点、二次确认、登录日志</td><td>admin_user, admin_role, admin_permission, admin_user_role, role_permission</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-3">
+        <div class="card"><span class="k">EVENT 01</span><h4>OrderPaid</h4><p>载荷：orderId、paymentId、paidAmount、merchantId、paidAt。消费方：履约（生成核销/预约）、通知、资金（记账）。</p></div>
+        <div class="card"><span class="k">EVENT 02</span><h4>OrderCompleted</h4><p>载荷：orderId、completedAt、merchantId。消费方：资金（生成结算项，due_at = completedAt + N 天）。</p></div>
+        <div class="card"><span class="k">EVENT 03</span><h4>RefundSucceeded</h4><p>载荷：orderId、refundId、amount、afterSaleId。消费方：资金（冲回）、通知、结算项调整。</p></div>
+      </div>
+    </section>
+
+    <section class="sec" id="s4">
+      <div class="sec-intro"><span class="sec-no">04</span><h2>核心流程与状态机</h2></div>
+      <p class="lede">状态机的价值不是“画得好看”，而是让每一次状态变更都有明确的事件、守卫条件与副作用。下面先描述五条主流程，再用表格把状态迁移固定下来。</p>
+
+      <h3 class="sub" id="s4-1">4.1 下单与支付</h3>
+      <ol class="timeline-list">
+        <li><span class="n">1</span><div><b>提交结算</b><small>客户端提交 merchantId、商品行、履约方式、地址或预约时段、幂等键。服务端不信任客户端传入的金额。</small></div></li>
+        <li><span class="n">2</span><div><b>校验与快照</b><small>校验门店营业、商品上架、库存/时段容量、配送范围；生成商品价格、配送费、佣金率快照。佣金率解析顺序：商户覆盖值 → 类目默认值，解析结果快照到订单，结算不再重算。</small></div></li>
+        <li><span class="n">3</span><div><b>预占资源</b><small>实物扣减可售库存并增加锁定库存；服务时段增加 reserved_count；失败则返回明确原因。</small></div></li>
+        <li><span class="n">4</span><div><b>创建订单</b><small>写入 order（PENDING_PAYMENT，expire_at = now + 15 分钟）、order_item、order_status_log；金额全部为整数分。</small></div></li>
+        <li><span class="n">5</span><div><b>创建支付单</b><small>调用微信支付统一下单，写入 payment_order（CREATED）；返回 prepay_id 给客户端。</small></div></li>
+        <li><span class="n">6</span><div><b>支付回调</b><small>验签、校验金额、按 payment_no 幂等更新为 PAID；订单 PENDING_PAYMENT → PENDING_ACCEPT；发 OrderPaid。</small></div></li>
+        <li><span class="n">7</span><div><b>履约准备</b><small>核销类生成 verify_code，预约类生成 appointment；商户收到新订单通知；超时任务开始计时。</small></div></li>
+        <li><span class="n">8</span><div><b>失败与超时</b><small>15 分钟未支付关闭订单并释放库存/时段；支付失败保留待支付；重复支付识别后原路退回多余款项。</small></div></li>
+      </ol>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="k">IDEMPOTENCY</span>
+          <h4>创建订单与支付回调</h4>
+          <p>创建订单使用 <span class="code">Idempotency-Key</span> 唯一索引；支付回调以 <span class="code">transaction_id</span> 唯一约束 + <span class="code">UPDATE ... WHERE status IN ('CREATED','PAYING')</span> 双重保护，回调重复不会重复记账。</p>
+        </div>
+        <div class="card">
+          <span class="k">AMOUNT CHECK</span>
+          <h4>金额以支付单为准</h4>
+          <p>回调金额必须等于 payment_order.amount；若不一致，支付单标记异常，订单不进入待接单，转人工处理并告警。不允许“少付也发货”。</p>
+        </div>
+      </div>
+
+      <h3 class="sub" id="s4-2">4.2 履约与核销</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:110px">履约方式</th><th>商户动作</th><th>用户动作</th><th style="width:150px">完成条件</th><th style="width:170px">关键技术点</th></tr></thead>
+          <tbody>
+            <tr><td><strong>实物配送</strong></td><td>接单 → 填物流 → 发货</td><td>确认收货</td><td>确认收货或发货后 7 天自动确认</td><td>物流单号仅记录，不做轨迹对接；自动确认由调度任务执行。</td></tr>
+            <tr><td><strong>到店自提</strong></td><td>接单 → 备货完成 → 核销提货码</td><td>到店出示提货码</td><td>提货码核销成功</td><td>提货码与核销码共用 verify_code 表，type 区分 PICKUP / SERVICE。</td></tr>
+            <tr><td><strong>到店服务</strong></td><td>接单 → 确认预约 → 扫码核销</td><td>选择时段 → 到店出示核销码</td><td>核销成功</td><td>核销前校验门店、状态、有效期、预约窗口；核销后不可撤销。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout teal">
+        <span class="label">核销事务</span>
+        核销必须在同一事务中完成：① 校验 verify_code 属于本门店且状态 ACTIVE；② 条件更新为 USED（<span class="code">WHERE status='ACTIVE'</span>）；③ 订单 → COMPLETED；④ 写状态日志；⑤ 发 OrderCompleted（资金模块据此生成结算项）。任何一步失败整体回滚，禁止“码已用、订单没完成”。
+      </div>
+
+      <h3 class="sub" id="s4-3">4.3 售后与仲裁</h3>
+      <ol class="timeline-list">
+        <li><span class="n">1</span><div><b>申请售后</b><small>按订单类型与状态校验是否可申请；写入 after_sale，上传凭证；若尚未结算，冻结对应结算项。</small></div></li>
+        <li><span class="n">2</span><div><b>商户处理</b><small>同意退款或拒绝（必填原因）；48 小时内未处理，调度任务自动转平台仲裁。</small></div></li>
+        <li><span class="n">3</span><div><b>平台举证</b><small>客服受理，双方补充凭证；仲裁单记录责任方、判定金额与理由。</small></div></li>
+        <li><span class="n">4</span><div><b>执行退款</b><small>调用退款接口，退款单 PROCESSING → SUCCESS；发 RefundSucceeded；资金模块冲回虚拟账户。</small></div></li>
+        <li><span class="n">5</span><div><b>结案</b><small>订单/售后状态更新；通知双方；结算项解除冻结或标记调整；操作日志留存。</small></div></li>
+      </ol>
+      <p class="fineprint">退款金额不得超过订单已支付金额减已退款金额；部分退款按订单行金额与佣金比例计算，尾差计入平台。</p>
+
+      <h3 class="sub" id="s4-4">4.4 结算与提现</h3>
+      <div class="timeline-list" style="margin-bottom:14px">
+        <li><span class="n">1</span><div><b>订单完成</b><small>发 OrderCompleted；资金模块创建 settlement_item，状态 PENDING，<span class="code">due_at = completed_at + N 天</span>（N 默认 7 天，按商户配置）。</small></div></li>
+        <li><span class="n">2</span><div><b>每日批次</b><small>调度任务选取 due_at 已到、未冻结、未结算的结算项，按商户生成 settlement_batch，状态 PENDING。</small></div></li>
+        <li><span class="n">3</span><div><b>财务复核</b><small>财务核对订单、退款、佣金；发布批次（PUBLISHED），执行记账：待结算 → 可提现 + 平台佣金收入。</small></div></li>
+        <li><span class="n">4</span><div><b>商户提现</b><small>商户申请提现，金额从可提现转入提现中；财务审核后<strong>人工网银转账</strong>，回填银行回单号与凭证，状态 PAID（T7 已确认）。</small></div></li>
+      </div>
+
+      <h3 class="sub">订单主状态流</h3>
+      <div class="state-flow">
+        <span class="st start">待支付</span><span class="arr">→</span>
+        <span class="st">待接单</span><span class="arr">→</span>
+        <span class="st">待履约</span><span class="arr">→</span>
+        <span class="st">履约中</span><span class="arr">→</span>
+        <span class="st end">已完成</span><span class="arr">→</span>
+        <span class="st">售后中</span><span class="arr">→</span>
+        <span class="st risk">退款中 / 已退款</span>
+      </div>
+      <p class="fineprint">待支付、待接单均可取消并原路退款；服务订单核销即完成，不进入“履约中”。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:120px">当前状态</th><th style="width:150px">事件</th><th style="width:110px">目标状态</th><th style="width:230px">守卫条件</th><th>副作用</th></tr></thead>
+          <tbody>
+            <tr><td>PENDING_PAYMENT</td><td>PAY_SUCCESS</td><td>PENDING_ACCEPT</td><td>支付单 PAID，金额一致</td><td>发 OrderPaid；生成核销/预约；通知商户；写状态日志</td></tr>
+            <tr><td>PENDING_PAYMENT</td><td>CANCEL / TIMEOUT</td><td>CLOSED</td><td>未支付且未超过支付窗口</td><td>释放库存/时段；关闭支付单</td></tr>
+            <tr><td>PENDING_ACCEPT</td><td>MERCHANT_ACCEPT</td><td>PENDING_FULFILL</td><td>商户属于订单门店，订单未取消</td><td>写接单时间；开始履约 SLA 计时</td></tr>
+            <tr><td>PENDING_ACCEPT</td><td>MERCHANT_REJECT / TIMEOUT</td><td>REFUNDING</td><td>订单未履约</td><td>创建全额退款；释放资源；通知用户</td></tr>
+            <tr><td>PENDING_FULFILL</td><td>SHIP / PICKUP_READY / APPOINTMENT_CONFIRM</td><td>FULFILLING</td><td>履约类型匹配</td><td>写物流/备货/预约信息；通知用户</td></tr>
+            <tr><td>PENDING_FULFILL</td><td>USER_CANCEL</td><td>REFUNDING</td><td>商户尚未发货/备货/确认预约</td><td>创建全额退款；释放资源</td></tr>
+            <tr><td>FULFILLING</td><td>CONFIRM_RECEIVE / PICKUP_VERIFY</td><td>COMPLETED</td><td>核销码有效或用户确认</td><td>写完成时间；发 OrderCompleted；生成结算项</td></tr>
+            <tr><td>PENDING_FULFILL</td><td>SERVICE_VERIFY</td><td>COMPLETED</td><td>核销码属于本店、在有效期/预约窗口</td><td>核销码置 USED；发 OrderCompleted；生成结算项</td></tr>
+            <tr><td>COMPLETED</td><td>APPLY_AFTER_SALE</td><td>AFTER_SALE</td><td>在售后窗口内，类型可售后</td><td>创建售后单；冻结结算项（如未结算）</td></tr>
+            <tr><td>AFTER_SALE</td><td>REFUND_APPROVED / ARBITRATION_REFUND</td><td>REFUNDING</td><td>退款金额不超过可退金额</td><td>创建退款单；通知双方</td></tr>
+            <tr><td>REFUNDING</td><td>REFUND_SUCCESS</td><td>REFUNDED / COMPLETED</td><td>渠道退款成功</td><td>全额退款 → REFUNDED；部分退款 → COMPLETED 并记录退款金额</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">其他关键状态机</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:130px">实体</th><th style="width:250px">状态</th><th>关键迁移与约束</th></tr></thead>
+          <tbody>
+            <tr><td><strong>支付单</strong></td><td>CREATED → PAYING → PAID；PAID → REFUNDING → PARTIAL_REFUNDED / REFUNDED；CREATED → CLOSED</td><td>transaction_id 唯一；金额不一致进入异常；退款累计不得超过支付金额。</td></tr>
+            <tr><td><strong>退款单</strong></td><td>REQUESTED → PROCESSING → SUCCESS / FAILED</td><td>以 refund_no 幂等；失败可重试；成功后必须触发资金冲回。</td></tr>
+            <tr><td><strong>售后单</strong></td><td>APPLIED → MERCHANT_PROCESSING → MERCHANT_AGREED / REJECTED → ARBITRATING → RESOLVED → REFUNDING → COMPLETED / CANCELLED</td><td>商户超时自动转仲裁；平台结论为最终；已退款不可再次申请同金额。</td></tr>
+            <tr><td><strong>结算项</strong></td><td>PENDING → FROZEN → PENDING / SETTLED；PENDING → SETTLED；PENDING → CANCELLED</td><td>order_id 唯一；due_at 到期才可入批次；售后中冻结；全额退款且未结算可取消。</td></tr>
+            <tr><td><strong>提现单</strong></td><td>REQUESTED → APPROVED → PAYING → PAID；REQUESTED → REJECTED；PAYING → FAILED</td><td>金额不得超过可提现；申请时从可提现转入提现中；驳回/失败必须退回。</td></tr>
+            <tr><td><strong>预约</strong></td><td>PENDING_CONFIRM → CONFIRMED → COMPLETED；PENDING_CONFIRM → CANCELLED；CONFIRMED → NO_SHOW</td><td>时段容量条件更新；商户确认时限；取消时限；爽约记录但 P0 不自动扣款。</td></tr>
+            <tr><td><strong>核销码</strong></td><td>ACTIVE → USED / EXPIRED / INVALID</td><td>一单一码；动态码由客户端展示但服务端以 code + 状态为准；核销不可撤销。</td></tr>
+            <tr><td><strong>商户</strong></td><td>PENDING → ACTIVE → RESTING / BANNED；ACTIVE ↔ RESTING；BANNED → ACTIVE</td><td>停业/封禁停止新订单；在途订单按规则批量取消退款；已履约订单继续售后。</td></tr>
+            <tr><td><strong>商品</strong></td><td>DRAFT → PENDING_AUDIT → ON_SALE / REJECTED；ON_SALE ↔ OFF_SALE</td><td>价格、主图、类目变更需重新审核；库存与描述微调可不重审。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sec" id="s5">
+      <div class="sec-intro"><span class="sec-no">05</span><h2>数据模型</h2></div>
+      <p class="lede">数据模型围绕“订单是交易主线、虚拟账户是资金主线、结算项是两条主线的连接点”来组织。所有金额用整数分，所有业务记录保留状态与审计字段，不做物理删除。</p>
+
+      <h3 class="sub">5.1 建模约定</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:110px">约定</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>主键</td><td>业务表统一 BIGINT 主键（雪花 ID 或数据库序列）；对外单号单独生成，如 LM202611070001、WX...、RF...。</td></tr>
+            <tr><td>金额</td><td>BIGINT，单位“分”；接口与库内一致；费率用 DECIMAL(5,4)（如 0.0500 表示 5%）。</td></tr>
+            <tr><td>时间</td><td>库内存 UTC；接口返回 ISO 8601；页面按 Asia/Shanghai 展示。</td></tr>
+            <tr><td>状态</td><td>枚举字符串（如 PENDING_PAYMENT），不使用魔法数字；状态变更写 order_status_log。</td></tr>
+            <tr><td>删除</td><td>业务记录只改状态，不物理删除；审计与资金流水永久保留。</td></tr>
+            <tr><td>审计字段</td><td>created_at、updated_at 必有；资金与治理表增加 created_by / updated_by / reason。</td></tr>
+            <tr><td>快照</td><td>订单保存商品、价格、佣金率快照；商户保存结算账户快照；规则变更不影响已支付订单。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">5.2 领域关系</h3>
+      <div class="domain-grid">
+        <div class="domain-card"><h4>用户与商户</h4>
+          <span class="entity">app_user <em>用户</em></span>
+          <span class="entity">user_identity <em>多端身份</em></span>
+          <span class="entity">merchant <em>商户/门店</em></span>
+          <span class="entity">merchant_staff <em>店长/店员</em></span>
+        </div>
+        <div class="domain-card"><h4>商品与履约能力</h4>
+          <span class="entity">category <em>类目</em></span>
+          <span class="entity">product <em>商品/服务</em></span>
+          <span class="entity">product_sku <em>规格/库存</em></span>
+          <span class="entity">service_slot <em>预约时段</em></span>
+        </div>
+        <div class="domain-card"><h4>交易</h4>
+          <span class="entity">order <em>订单主表</em></span>
+          <span class="entity">order_item <em>商品行</em></span>
+          <span class="entity">payment_order <em>支付单</em></span>
+          <span class="entity">refund_order <em>退款单</em></span>
+          <span class="entity">order_status_log <em>状态日志</em></span>
+        </div>
+        <div class="domain-card"><h4>履约与售后</h4>
+          <span class="entity">order_delivery <em>配送/自提</em></span>
+          <span class="entity">verify_code <em>核销码</em></span>
+          <span class="entity">appointment <em>预约</em></span>
+          <span class="entity">after_sale <em>售后单</em></span>
+          <span class="entity">arbitration_case <em>仲裁</em></span>
+        </div>
+        <div class="domain-card"><h4>资金</h4>
+          <span class="entity">merchant_account <em>虚拟账户</em></span>
+          <span class="entity">ledger_transaction <em>记账事务</em></span>
+          <span class="entity">ledger_entry <em>借贷分录</em></span>
+          <span class="entity">settlement_item <em>结算项</em></span>
+          <span class="entity">withdrawal_order <em>提现单</em></span>
+        </div>
+        <div class="domain-card"><h4>治理与内容</h4>
+          <span class="entity">rule_version <em>规则版本</em></span>
+          <span class="entity">audit_task <em>审核任务</em></span>
+          <span class="entity">operation_log <em>操作日志</em></span>
+          <span class="entity">content_item <em>内容位</em></span>
+          <span class="entity">notification <em>通知</em></span>
+        </div>
+      </div>
+
+      <div class="callout blue">
+        <span class="label">三条主线</span>
+        交易主线：<span class="pill">order → payment → verify/appointment → after_sale → refund</span>；资金主线：<span class="pill">merchant_account → ledger_transaction → ledger_entry</span>；连接点：<span class="pill">settlement_item (order_id 唯一)</span>。一张订单最多产生一个结算项，退款通过调整项或负余额处理。
+      </div>
+
+      <h3 class="sub">5.3 表清单</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:180px">表</th><th>作用</th><th style="width:230px">关键字段</th><th style="width:190px">约束 / 索引</th></tr></thead>
+          <tbody>
+            <tr><td colspan="4" style="background:#F2EDE0;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)">用户与商户</td></tr>
+            <tr><td class="mono">app_user</td><td>用户主档</td><td>union_id, phone, nickname, status</td><td>unique(union_id)；index(phone)</td></tr>
+            <tr><td class="mono">user_identity</td><td>小程序/H5 身份</td><td>user_id, channel, open_id, union_id</td><td>unique(channel, open_id)</td></tr>
+            <tr><td class="mono">merchant</td><td>商户=门店</td><td>merchant_no, name, category_id, lng/lat, status, commission_rate（商户覆盖，空则继承类目）, bank_info</td><td>unique(merchant_no)；index(category_id, status)</td></tr>
+            <tr><td class="mono">merchant_staff</td><td>店长/店员</td><td>merchant_id, user_id, role, status</td><td>unique(merchant_id, user_id)</td></tr>
+            <tr><td class="mono">merchant_qualification</td><td>资质材料</td><td>merchant_id, type, file_url, expire_at, audit_status</td><td>index(merchant_id, type)</td></tr>
+            <tr><td colspan="4" style="background:#F2EDE0;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)">商品与时段</td></tr>
+            <tr><td class="mono">category</td><td>平台类目</td><td>parent_id, name, level, sort, status, commission_rate（默认佣金率）</td><td>index(parent_id, sort)</td></tr>
+            <tr><td class="mono">product</td><td>实物/服务商品</td><td>merchant_id, category_id, type, title, price, status, verify_days, appointment_required, delivery_types</td><td>index(merchant_id, status)；index(category_id, status)</td></tr>
+            <tr><td class="mono">product_sku</td><td>规格与库存</td><td>product_id, sku_code, spec_json, price, stock, locked_stock, sold_stock, version</td><td>unique(product_id, sku_code)</td></tr>
+            <tr><td class="mono">service_slot_template</td><td>按周时段模板</td><td>product_id, weekday, start_time, end_time, capacity</td><td>index(product_id, weekday)</td></tr>
+            <tr><td class="mono">service_slot</td><td>具体日期时段</td><td>product_id, slot_date, start_time, end_time, capacity, reserved_count</td><td>unique(product_id, slot_date, start_time)</td></tr>
+            <tr><td colspan="4" style="background:#F2EDE0;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)">交易与履约</td></tr>
+            <tr><td class="mono">order</td><td>订单主表</td><td>order_no, user_id, merchant_id, type, status, amounts, commission snapshot, timestamps</td><td>unique(order_no)；index(user_id, created_at)；index(merchant_id, status)</td></tr>
+            <tr><td class="mono">order_item</td><td>商品行</td><td>order_id, product_id, sku_id, snapshot_json, price, quantity, amount, refund_amount</td><td>index(order_id)</td></tr>
+            <tr><td class="mono">order_status_log</td><td>状态迁移日志</td><td>order_id, from_status, to_status, event, operator, reason</td><td>index(order_id, created_at)</td></tr>
+            <tr><td class="mono">order_delivery</td><td>配送/自提信息</td><td>order_id, type, address_snapshot, logistics_no, pickup_code, shipped_at</td><td>unique(order_id)</td></tr>
+            <tr><td class="mono">verify_code</td><td>核销码/提货码</td><td>order_id, merchant_id, code, type, status, valid_to, used_at, used_by</td><td>unique(code)；index(order_id)</td></tr>
+            <tr><td class="mono">appointment</td><td>服务预约</td><td>order_id, slot_id, slot_date, start_time, status, confirmed_at</td><td>unique(order_id)</td></tr>
+            <tr><td class="mono">payment_order</td><td>微信支付单</td><td>payment_no, order_id, channel, amount, status, transaction_id, prepay_id</td><td>unique(payment_no)；unique(transaction_id)</td></tr>
+            <tr><td class="mono">refund_order</td><td>退款单</td><td>refund_no, order_id, payment_id, after_sale_id, amount, status</td><td>unique(refund_no)；index(order_id)</td></tr>
+            <tr><td colspan="4" style="background:#F2EDE0;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)">售后与仲裁</td></tr>
+            <tr><td class="mono">after_sale</td><td>售后单</td><td>after_sale_no, order_id, type, reason, request_amount, approved_amount, status, deadline_at</td><td>unique(after_sale_no)；index(merchant_id, status, deadline_at)</td></tr>
+            <tr><td class="mono">arbitration_case</td><td>仲裁案</td><td>case_no, after_sale_id, amount, status, ruling, liability, deadline_at</td><td>unique(case_no)；index(status)</td></tr>
+            <tr><td class="mono">arbitration_evidence</td><td>举证材料</td><td>case_id, party, file_url, note</td><td>index(case_id)</td></tr>
+            <tr><td colspan="4" style="background:#F2EDE0;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)">资金与结算</td></tr>
+            <tr><td class="mono">merchant_account</td><td>商户虚拟账户</td><td>merchant_id, pending, frozen, available, withdrawing, version</td><td>unique(merchant_id)</td></tr>
+            <tr><td class="mono">ledger_transaction</td><td>记账事务</td><td>txn_no, biz_type, biz_id, event_type, idempotency_key, total_amount</td><td>unique(idempotency_key)；unique(txn_no)</td></tr>
+            <tr><td class="mono">ledger_entry</td><td>借贷分录</td><td>txn_id, account_type, account_id, direction, amount, balance_after</td><td>index(account_type, account_id, created_at)</td></tr>
+            <tr><td class="mono">settlement_batch</td><td>结算批次</td><td>batch_no, period, status, total_amount, commission_amount, net_amount</td><td>unique(batch_no)；index(status, created_at)</td></tr>
+            <tr><td class="mono">settlement_item</td><td>单订单结算项</td><td>batch_id, merchant_id, order_id, due_at, amounts, status</td><td>unique(order_id)；index(merchant_id, status, due_at)</td></tr>
+            <tr><td class="mono">withdrawal_order</td><td>提现单</td><td>withdrawal_no, merchant_id, amount, bank_snapshot, status, voucher_no</td><td>unique(withdrawal_no)；index(merchant_id, status)</td></tr>
+            <tr><td class="mono">account_adjustment</td><td>结算后调整</td><td>merchant_id, type, amount, reason, related_id, created_by</td><td>index(merchant_id, created_at)</td></tr>
+            <tr><td colspan="4" style="background:#F2EDE0;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)">治理、内容与通知</td></tr>
+            <tr><td class="mono">rule_version</td><td>规则版本快照</td><td>version_no, snapshot_json, status, effective_at, created_by</td><td>unique(version_no)</td></tr>
+            <tr><td class="mono">audit_task</td><td>商户/商品审核</td><td>biz_type, biz_id, status, decision, reason, assigned_to</td><td>index(biz_type, status, created_at)</td></tr>
+            <tr><td class="mono">operation_log</td><td>操作日志</td><td>operator, action, biz_type, biz_id, before_json, after_json, ip</td><td>index(biz_type, biz_id, created_at)</td></tr>
+            <tr><td class="mono">content_item</td><td>Banner/类目/推荐位</td><td>slot_code, title, image, link, status, sort</td><td>index(slot_code, status, sort)</td></tr>
+            <tr><td class="mono">notification</td><td>通知记录</td><td>recipient, channel, template_id, payload, status, sent_at</td><td>index(recipient, created_at)</td></tr>
+            <tr><td class="mono">outbox_event</td><td>可靠事件</td><td>aggregate_type, aggregate_id, event_type, payload, status, retry_count</td><td>index(status, next_retry_at)</td></tr>
+            <tr><td class="mono">order_review</td><td>订单评价</td><td>order_id, user_id, merchant_id, score, content, status</td><td>unique(order_id, user_id)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout teal">
+        <span class="label">佣金解析（T8 已确认）</span>
+        下单时按 <strong>商户覆盖佣金率 → 类目默认佣金率</strong> 的顺序解析，解析结果快照到 <span class="pill">order.commission_rate</span> 与 <span class="pill">settlement_item.commission_rate</span>；结算不再读取最新配置。提现手续费率仍为 <span class="tbd">[TBD 财务]</span>，以配置项预留，具体取值待确认。
+      </div>
+
+      <h3 class="sub">5.4 核心表字段</h3>
+
+      <div class="schema">
+        <div class="schema-head"><b>order</b><span>订单主表 · 交易主线</span></div>
+        <table>
+          <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>id / order_no</td><td>BIGINT / VARCHAR(32)</td><td>主键 / 业务单号，唯一</td></tr>
+            <tr><td>user_id / merchant_id</td><td>BIGINT / BIGINT</td><td>用户与商户（门店）</td></tr>
+            <tr><td>order_type</td><td>VARCHAR(16)</td><td>EXPRESS / PICKUP / SERVICE</td></tr>
+            <tr><td>status / fulfillment_status</td><td>VARCHAR(24)</td><td>主状态 / 履约子状态</td></tr>
+            <tr><td>product_amount</td><td>BIGINT</td><td>商品金额（分）</td></tr>
+            <tr><td>delivery_fee</td><td>BIGINT</td><td>配送费（分，P0 全额归商户）</td></tr>
+            <tr><td>payable_amount / paid_amount</td><td>BIGINT</td><td>应付 / 实付（分）</td></tr>
+            <tr><td>refunded_amount</td><td>BIGINT</td><td>累计退款（分），不得超过 paid_amount</td></tr>
+            <tr><td>commission_rate</td><td>DECIMAL(5,4)</td><td>支付时快照，如 0.0500</td></tr>
+            <tr><td>commission_amount</td><td>BIGINT</td><td>佣金（分）</td></tr>
+            <tr><td>contact_json</td><td>JSON</td><td>联系人、电话、地址或自提人快照</td></tr>
+            <tr><td>expire_at / paid_at / accepted_at</td><td>DATETIME</td><td>支付超时 / 支付 / 接单时间</td></tr>
+            <tr><td>completed_at / closed_at</td><td>DATETIME</td><td>完成 / 关闭时间；completed_at 是结算起点</td></tr>
+            <tr><td>version</td><td>INT</td><td>乐观锁版本</td></tr>
+            <tr><td>created_at / updated_at</td><td>DATETIME</td><td>审计时间</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="schema">
+        <div class="schema-head"><b>payment_order</b><span>微信支付单 · 幂等核心</span></div>
+        <table>
+          <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>id / payment_no</td><td>BIGINT / VARCHAR(32)</td><td>主键 / 支付单号，唯一</td></tr>
+            <tr><td>order_id / user_id</td><td>BIGINT / BIGINT</td><td>关联订单与用户</td></tr>
+            <tr><td>channel</td><td>VARCHAR(16)</td><td>WECHAT_MINI / WECHAT_H5</td></tr>
+            <tr><td>amount</td><td>BIGINT</td><td>支付金额（分），必须等于订单应付</td></tr>
+            <tr><td>status</td><td>VARCHAR(16)</td><td>CREATED / PAYING / PAID / CLOSED / REFUNDED</td></tr>
+            <tr><td>prepay_id</td><td>VARCHAR(64)</td><td>微信预支付 ID</td></tr>
+            <tr><td>transaction_id</td><td>VARCHAR(64)</td><td>微信支付交易号，唯一，回调幂等依据</td></tr>
+            <tr><td>idempotency_key</td><td>VARCHAR(64)</td><td>创建支付单幂等键，唯一</td></tr>
+            <tr><td>paid_at / expire_at</td><td>DATETIME</td><td>支付成功 / 支付超时</td></tr>
+            <tr><td>raw_callback</td><td>JSON</td><td>回调原文（脱敏），用于排障</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="schema">
+        <div class="schema-head"><b>after_sale</b><span>售后单 · 与订单、退款、仲裁关联</span></div>
+        <table>
+          <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>id / after_sale_no</td><td>BIGINT / VARCHAR(32)</td><td>主键 / 售后单号，唯一</td></tr>
+            <tr><td>order_id / order_item_id</td><td>BIGINT / BIGINT</td><td>整单或按行售后</td></tr>
+            <tr><td>user_id / merchant_id</td><td>BIGINT / BIGINT</td><td>数据隔离依据</td></tr>
+            <tr><td>type</td><td>VARCHAR(24)</td><td>REFUND_ONLY / RETURN_REFUND / SERVICE_ISSUE</td></tr>
+            <tr><td>reason_code / description</td><td>VARCHAR(32) / TEXT</td><td>原因码与描述</td></tr>
+            <tr><td>evidence_json</td><td>JSON</td><td>凭证文件列表</td></tr>
+            <tr><td>request_amount / approved_amount</td><td>BIGINT</td><td>申请 / 批准金额（分）</td></tr>
+            <tr><td>status</td><td>VARCHAR(24)</td><td>APPLIED / MERCHANT_PROCESSING / ARBITRATING / RESOLVED / REFUNDING / COMPLETED</td></tr>
+            <tr><td>merchant_decision / merchant_reason</td><td>VARCHAR(16) / TEXT</td><td>商户处理结果</td></tr>
+            <tr><td>deadline_at</td><td>DATETIME</td><td>商户处理截止；超时转仲裁</td></tr>
+            <tr><td>arbitration_case_id / refund_id</td><td>BIGINT / BIGINT</td><td>关联仲裁与退款</td></tr>
+            <tr><td>created_at / closed_at</td><td>DATETIME</td><td>申请 / 结案时间</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="schema">
+        <div class="schema-head"><b>merchant_account</b><span>商户虚拟账户 · 余额快照</span></div>
+        <table>
+          <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>id / merchant_id</td><td>BIGINT / BIGINT</td><td>主键 / 商户，唯一</td></tr>
+            <tr><td>pending_balance</td><td>BIGINT</td><td>待结算（分），订单完成未结算</td></tr>
+            <tr><td>frozen_balance</td><td>BIGINT</td><td>冻结（分），售后/争议中</td></tr>
+            <tr><td>available_balance</td><td>BIGINT</td><td>可提现（分），允许负数表示欠款</td></tr>
+            <tr><td>withdrawing_balance</td><td>BIGINT</td><td>提现中（分），等待线下打款</td></tr>
+            <tr><td>version / updated_at</td><td>INT / DATETIME</td><td>乐观锁与更新时间</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="schema">
+        <div class="schema-head"><b>ledger_transaction + ledger_entry</b><span>复式记账 · 借贷必平</span></div>
+        <table>
+          <thead><tr><th>表 / 字段</th><th>类型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>txn_no</td><td>VARCHAR(32)</td><td>记账事务号，唯一</td></tr>
+            <tr><td>biz_type / biz_id</td><td>VARCHAR(24) / BIGINT</td><td>PAYMENT / REFUND / SETTLEMENT / WITHDRAWAL / FREEZE</td></tr>
+            <tr><td>event_type</td><td>VARCHAR(32)</td><td>PAY_SUCCESS / SETTLE / REFUND / PAYOUT 等</td></tr>
+            <tr><td>idempotency_key</td><td>VARCHAR(64)</td><td>唯一，防重复记账</td></tr>
+            <tr><td>total_amount</td><td>BIGINT</td><td>事务总金额（分）</td></tr>
+            <tr><td>entry.account_type / account_id</td><td>VARCHAR(24) / BIGINT</td><td>账户类型与商户/平台账户</td></tr>
+            <tr><td>entry.direction</td><td>CHAR(1)</td><td>D（借）/ C（贷）</td></tr>
+            <tr><td>entry.amount</td><td>BIGINT</td><td>分录金额（分）</td></tr>
+            <tr><td>entry.balance_after</td><td>BIGINT</td><td>记账后余额，便于排查</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="schema">
+        <div class="schema-head"><b>settlement_item</b><span>订单与资金的连接点</span></div>
+        <table>
+          <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>id / order_id</td><td>BIGINT / BIGINT</td><td>主键 / 订单，唯一（一单一结算项）</td></tr>
+            <tr><td>merchant_id / batch_id</td><td>BIGINT / BIGINT</td><td>商户与所属批次</td></tr>
+            <tr><td>order_completed_at / due_at</td><td>DATETIME / DATETIME</td><td>完成时间 / 可结算时间 = 完成 + N 天</td></tr>
+            <tr><td>product_amount / delivery_fee</td><td>BIGINT</td><td>商品金额 / 配送费</td></tr>
+            <tr><td>commission_rate / commission_amount</td><td>DECIMAL(5,4) / BIGINT</td><td>快照佣金率与佣金</td></tr>
+            <tr><td>refund_amount</td><td>BIGINT</td><td>结算前退款金额</td></tr>
+            <tr><td>net_amount</td><td>BIGINT</td><td>应结金额 = 商品 + 配送费 - 佣金 - 退款</td></tr>
+            <tr><td>status</td><td>VARCHAR(16)</td><td>PENDING / FROZEN / SETTLED / CANCELLED</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="schema">
+        <div class="schema-head"><b>withdrawal_order</b><span>提现单 · 线下打款凭证</span></div>
+        <table>
+          <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>id / withdrawal_no</td><td>BIGINT / VARCHAR(32)</td><td>主键 / 提现单号，唯一</td></tr>
+            <tr><td>merchant_id / account_id</td><td>BIGINT / BIGINT</td><td>商户与虚拟账户</td></tr>
+            <tr><td>amount / fee / net_amount</td><td>BIGINT</td><td>申请金额 / 手续费 / 实付金额</td></tr>
+            <tr><td>bank_snapshot_json</td><td>JSON</td><td>收款银行、户名、卡号（脱敏+加密存储）</td></tr>
+            <tr><td>status</td><td>VARCHAR(16)</td><td>REQUESTED / APPROVED / PAYING / PAID / REJECTED / FAILED</td></tr>
+            <tr><td>requested_at / reviewed_by / reviewed_at</td><td>DATETIME / BIGINT / DATETIME</td><td>申请与审核</td></tr>
+            <tr><td>paid_at / voucher_url / voucher_no</td><td>DATETIME / VARCHAR / VARCHAR</td><td>打款时间、回单文件、银行回单号</td></tr>
+            <tr><td>fail_reason</td><td>TEXT</td><td>驳回或失败原因</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="schema">
+        <div class="schema-head"><b>product_sku</b><span>库存与并发扣减</span></div>
+        <table>
+          <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>id / product_id / sku_code</td><td>BIGINT / BIGINT / VARCHAR</td><td>主键 / 商品 / 规格编码</td></tr>
+            <tr><td>spec_json</td><td>JSON</td><td>规格快照，如杯型、口味</td></tr>
+            <tr><td>price</td><td>BIGINT</td><td>售价（分）</td></tr>
+            <tr><td>stock / locked_stock / sold_stock</td><td>INT</td><td>总库存 / 下单锁定 / 已售</td></tr>
+            <tr><td>version</td><td>INT</td><td>乐观锁</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">5.5 关键索引与约束</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:210px">约束</th><th>目的</th></tr></thead>
+          <tbody>
+            <tr><td>unique(order.order_no)</td><td>订单号唯一，防止重复下单产生歧义</td></tr>
+            <tr><td>unique(payment_order.transaction_id)</td><td>支付回调幂等，防止重复记账</td></tr>
+            <tr><td>unique(ledger_transaction.idempotency_key)</td><td>同一业务事件只记账一次</td></tr>
+            <tr><td>unique(settlement_item.order_id)</td><td>一张订单最多一个结算项</td></tr>
+            <tr><td>unique(merchant_account.merchant_id)</td><td>一个商户一个虚拟账户</td></tr>
+            <tr><td>unique(withdrawal_order.withdrawal_no)</td><td>提现单唯一，防止重复打款</td></tr>
+            <tr><td>index(order: merchant_id, status, created_at)</td><td>商户订单列表与平台订单筛选</td></tr>
+            <tr><td>index(settlement_item: merchant_id, status, due_at)</td><td>结算批次扫描</td></tr>
+            <tr><td>index(ledger_entry: account_type, account_id, created_at)</td><td>账户流水与对账</td></tr>
+            <tr><td>index(after_sale: merchant_id, status, deadline_at)</td><td>售后超时转仲裁</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sec" id="s6">
+      <div class="sec-intro"><span class="sec-no">06</span><h2>资金记账设计</h2></div>
+      <p class="lede">资金模块只做两件事：<strong>把业务事件翻译成借贷分录</strong>，并维护账户余额快照。任何绕过流水直接改余额的代码都不允许进入主干。</p>
+
+      <h3 class="sub">6.1 账户体系</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:210px">账户</th><th style="width:90px">性质</th><th>含义</th></tr></thead>
+          <tbody>
+            <tr><td>PLATFORM_CASH</td><td>资产</td><td>平台微信收款账户中的资金；用户支付增加，退款/打款减少。</td></tr>
+            <tr><td>MERCHANT_PENDING</td><td>负债</td><td>平台应付商户、尚未结算的金额；支付成功增加，结算/退款减少。</td></tr>
+            <tr><td>MERCHANT_FROZEN</td><td>负债</td><td>售后或争议中冻结的金额；从待结算或可提现转入。</td></tr>
+            <tr><td>MERCHANT_AVAILABLE</td><td>负债</td><td>商户可提现余额；结算入账增加，提现/退款减少，可为负。</td></tr>
+            <tr><td>MERCHANT_WITHDRAWING</td><td>负债</td><td>已申请提现、等待线下打款的金额。</td></tr>
+            <tr><td>PLATFORM_COMMISSION_REVENUE</td><td>收入</td><td>平台佣金收入；结算时确认，退款时按比例冲回。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">6.2 借贷示例</h3>
+      <p>以一笔 ¥88.00 的到店服务订单为例：佣金率 5%，佣金 ¥4.40，商户可结算 ¥83.60。切换场景查看分录。</p>
+
+      <div class="tabs" data-tabs="ledger">
+        <div class="tabbar">
+          <button data-tab-btn="pay" class="is-on">支付成功</button>
+          <button data-tab-btn="settle">结算入账</button>
+          <button data-tab-btn="refund-before">结算前退款</button>
+          <button data-tab-btn="refund-after">结算后退款</button>
+          <button data-tab-btn="withdraw">提现打款</button>
+          <button data-tab-btn="freeze">冻结与解冻</button>
+        </div>
+
+        <div data-tab-panel="pay" class="is-on">
+          <div class="journal">
+            <div class="journal-head"><span>科目</span><span>借方</span><span>贷方</span><span>说明</span></div>
+            <div class="journal-row"><span>PLATFORM_CASH</span><span class="dr">88.00</span><span></span><span>平台收款账户增加</span></div>
+            <div class="journal-row"><span>MERCHANT_PENDING</span><span></span><span class="cr">88.00</span><span>平台应付商户增加</span></div>
+            <div class="journal-row total"><span>合计</span><span class="dr">88.00</span><span class="cr">88.00</span><span>借贷必平</span></div>
+            <div class="journal-note">触发：PaymentSucceeded。订单进入待接单；此时佣金尚未确认。</div>
+          </div>
+        </div>
+
+        <div data-tab-panel="settle">
+          <div class="journal">
+            <div class="journal-head"><span>科目</span><span>借方</span><span>贷方</span><span>说明</span></div>
+            <div class="journal-row"><span>MERCHANT_PENDING</span><span class="dr">88.00</span><span></span><span>转出待结算</span></div>
+            <div class="journal-row"><span>MERCHANT_AVAILABLE</span><span></span><span class="cr">83.60</span><span>商户可提现增加</span></div>
+            <div class="journal-row"><span>PLATFORM_COMMISSION_REVENUE</span><span></span><span class="cr">4.40</span><span>确认平台佣金收入</span></div>
+            <div class="journal-row total"><span>合计</span><span class="dr">88.00</span><span class="cr">88.00</span><span>结算发布时记账</span></div>
+            <div class="journal-note">触发：SettlementPublished。结算项 order_id 唯一；佣金率使用订单支付时快照。</div>
+          </div>
+        </div>
+
+        <div data-tab-panel="refund-before">
+          <div class="journal">
+            <div class="journal-head"><span>科目</span><span>借方</span><span>贷方</span><span>说明</span></div>
+            <div class="journal-row"><span>MERCHANT_PENDING</span><span class="dr">88.00</span><span></span><span>冲减应付商户</span></div>
+            <div class="journal-row"><span>PLATFORM_CASH</span><span></span><span class="cr">88.00</span><span>原路退回用户</span></div>
+            <div class="journal-row total"><span>合计</span><span class="dr">88.00</span><span class="cr">88.00</span><span>佣金尚未确认，无需冲回</span></div>
+            <div class="journal-note">触发：RefundSucceeded。结算项取消；订单进入已退款或已完成（部分退款）。</div>
+          </div>
+        </div>
+
+        <div data-tab-panel="refund-after">
+          <div class="journal">
+            <div class="journal-head"><span>科目</span><span>借方</span><span>贷方</span><span>说明</span></div>
+            <div class="journal-row"><span>MERCHANT_AVAILABLE</span><span class="dr">83.60</span><span></span><span>扣减商户可提现；不足则形成负余额</span></div>
+            <div class="journal-row"><span>PLATFORM_COMMISSION_REVENUE</span><span class="dr">4.40</span><span></span><span>佣金按比例冲回</span></div>
+            <div class="journal-row"><span>PLATFORM_CASH</span><span></span><span class="cr">88.00</span><span>原路退回用户</span></div>
+            <div class="journal-row total"><span>合计</span><span class="dr">88.00</span><span class="cr">88.00</span><span>结算后全额退款</span></div>
+            <div class="journal-note">部分退款按金额比例拆分；尾差计入平台。若商户已提现，available 变为负数，从后续结算抵扣。</div>
+          </div>
+        </div>
+
+        <div data-tab-panel="withdraw">
+          <div class="journal">
+            <div class="journal-head"><span>科目</span><span>借方</span><span>贷方</span><span>说明</span></div>
+            <div class="journal-row"><span>MERCHANT_AVAILABLE</span><span class="dr">83.60</span><span></span><span>申请提现：转出可提现</span></div>
+            <div class="journal-row"><span>MERCHANT_WITHDRAWING</span><span></span><span class="cr">83.60</span><span>进入提现中</span></div>
+            <div class="journal-row"><span>MERCHANT_WITHDRAWING</span><span class="dr">83.60</span><span></span><span>财务线下打款完成</span></div>
+            <div class="journal-row"><span>PLATFORM_CASH</span><span></span><span class="cr">83.60</span><span>平台资金实际流出</span></div>
+            <div class="journal-row total"><span>合计</span><span class="dr">167.20</span><span class="cr">167.20</span><span>两步记账，分别对应申请与打款</span></div>
+            <div class="journal-note">提现单必须记录银行回单号与凭证 URL；驳回/失败执行反向分录，退回可提现。</div>
+          </div>
+        </div>
+
+        <div data-tab-panel="freeze">
+          <div class="journal">
+            <div class="journal-head"><span>科目</span><span>借方</span><span>贷方</span><span>说明</span></div>
+            <div class="journal-row"><span>MERCHANT_PENDING</span><span class="dr">88.00</span><span></span><span>未结算订单冻结</span></div>
+            <div class="journal-row"><span>MERCHANT_FROZEN</span><span></span><span class="cr">88.00</span><span>售后争议中</span></div>
+            <div class="journal-row"><span>MERCHANT_FROZEN</span><span class="dr">88.00</span><span></span><span>解冻回待结算</span></div>
+            <div class="journal-row"><span>MERCHANT_PENDING</span><span></span><span class="cr">88.00</span><span>争议结束且不退款</span></div>
+            <div class="journal-row total"><span>合计</span><span class="dr">176.00</span><span class="cr">176.00</span><span>冻结/解冻成对出现</span></div>
+            <div class="journal-note">若订单已结算，则冻结从 MERCHANT_AVAILABLE 转入 FROZEN；解冻反向。冻结不改变平台现金。</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">6.3 记账不变量</h3>
+      <ul class="mini" style="font-size:12.5px">
+        <li><strong>借贷必平：</strong>每个 ledger_transaction 的借方合计必须等于贷方合计；日终对账任务再次校验。</li>
+        <li><strong>事务绑定：</strong>业务状态变更与记账事务在同一个数据库事务内提交；不允许先改状态后补流水。</li>
+        <li><strong>余额快照：</strong>merchant_account 余额在同一事务内按分录更新；ledger_entry.balance_after 记录快照，便于排查。</li>
+        <li><strong>幂等：</strong>同一个业务事件（支付成功、退款成功、结算发布、提现打款）只能产生一个记账事务；重复请求返回原结果。</li>
+        <li><strong>不可变：</strong>ledger_entry 只追加，不修改、不删除；纠错通过反向分录 + adjustment 记录。</li>
+        <li><strong>负余额：</strong>pending / frozen / withdrawing 不允许负数；available 允许负数，表示商户对平台的欠款，从后续结算抵扣。</li>
+      </ul>
+
+      <h3 class="sub">6.4 结算与提现时序</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:150px">阶段</th><th>动作</th><th style="width:220px">状态变化</th></tr></thead>
+          <tbody>
+            <tr><td>订单完成</td><td>创建 settlement_item，计算 due_at</td><td>order: COMPLETED；item: PENDING</td></tr>
+            <tr><td>售后申请</td><td>未结算则冻结；已结算则冻结可提现</td><td>item: FROZEN；账户 frozen ↑</td></tr>
+            <tr><td>批次生成</td><td>扫描 due_at 到期、非冻结项，按商户生成批次</td><td>batch: PENDING；item 关联 batch_id</td></tr>
+            <tr><td>财务发布</td><td>核对后发布，执行结算分录</td><td>batch: PUBLISHED；item: SETTLED；available ↑</td></tr>
+            <tr><td>商户提现</td><td>校验余额，冻结提现额</td><td>withdrawal: REQUESTED；available → withdrawing</td></tr>
+            <tr><td>财务打款</td><td>线下转账，回填回单</td><td>withdrawal: PAID；withdrawing → cash</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">6.5 对账与异常</h3>
+      <div class="grid-2">
+        <div class="card">
+          <span class="k">RECONCILIATION</span>
+          <h4>四本账每天对一次</h4>
+          <p>① 微信支付账单 vs payment_order；② 微信退款账单 vs refund_order；③ ledger_entry 汇总 vs merchant_account 快照；④ 提现单与银行回单金额。差异进入异常队列，由财务人工处理并生成 adjustment 分录。</p>
+        </div>
+        <div class="card">
+          <span class="k">FAILURE</span>
+          <h4>失败不吞掉</h4>
+          <p>退款失败、打款失败、记账失败都必须保留原单据与失败原因；重试由调度器执行，超过次数转人工。禁止删除失败单据或直接改余额“抹平”。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="s7">
+      <div class="sec-intro"><span class="sec-no">07</span><h2>接口设计</h2></div>
+      <p class="lede">接口按端分组，共用同一套领域服务。P0 只提供足够跑通主流程的接口，不为未来功能预留空接口；每个写接口都必须能回答“重复调用会怎样”。</p>
+
+      <h3 class="sub">7.1 通用约定</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:140px">约定</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>鉴权</td><td>消费者与商户使用 Bearer Token；后台使用独立 Token + RBAC 权限点。商户 Token 必须携带 merchant_id，服务端再次校验数据归属。</td></tr>
+            <tr><td>幂等</td><td>创建订单、创建支付单、申请退款、申请提现、核销必须携带 <span class="code">Idempotency-Key</span>；服务端以唯一索引落库。</td></tr>
+            <tr><td>金额</td><td>请求与响应中的金额统一为整数分，字段名以 <span class="code">_amount</span> 结尾；禁止传字符串或小数。</td></tr>
+            <tr><td>响应</td><td><span class="code">{ code, message, data, traceId }</span>；业务失败用 code 区分，HTTP 状态码不承载全部语义。</td></tr>
+            <tr><td>分页</td><td>列表统一使用 <span class="code">page</span> / <span class="code">pageSize</span>（或游标），默认按创建时间倒序；返回 <span class="code">total</span> 与 <span class="code">hasMore</span>。</td></tr>
+            <tr><td>时间</td><td>ISO 8601，带时区；服务端统一 UTC 存储。</td></tr>
+            <tr><td>追踪</td><td>每个请求生成 traceId，写入日志并返回响应头；支付回调、退款回调同样记录 traceId。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">7.2 消费者接口</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:280px">接口</th><th>用途</th><th style="width:210px">关键规则</th></tr></thead>
+          <tbody>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/auth/wechat/login</td><td>小程序登录，code 换 openid/unionid</td><td>按 unionid 合并账户；返回 Token</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/auth/h5/sms</td><td>H5 手机号验证码登录</td><td>验证码限流；同一手机号绑定 unionid</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/stores/nearby</td><td>附近门店</td><td>lat/lng/radius；按距离排序；只返回营业中</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/stores/{id}</td><td>门店详情与在售商品</td><td>停业/封禁不可下单</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/products/{id}</td><td>商品/服务详情</td><td>返回有效期、退款规则、可约时段</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/orders</td><td>创建订单</td><td>幂等；服务端定价；预占库存/时段</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/orders/{id}/pay</td><td>发起微信支付</td><td>返回 prepay_id；15 分钟有效</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/orders/{id}</td><td>订单详情</td><td>含状态时间轴、核销码、物流/预约信息</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/orders/{id}/cancel</td><td>取消待支付/待接单订单</td><td>条件更新；触发退款或关闭</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/after-sales</td><td>申请售后</td><td>校验可售后状态；上传凭证；冻结结算项</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/after-sales/{id}</td><td>售后进度</td><td>含商户处理、仲裁、退款状态</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/orders/{id}/review</td><td>提交评价</td><td>完成后 7 天内；一单一评</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">7.3 商户接口</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:280px">接口</th><th>用途</th><th style="width:210px">关键规则</th></tr></thead>
+          <tbody>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/merchant/apply</td><td>提交入驻资料</td><td>幂等；驳回可重提；保留历史版本</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/merchant/profile</td><td>门店与账户信息</td><td>仅本商户；店员不可见金额</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/merchant/products</td><td>发布商品/服务</td><td>提交审核；价格/主图/类目变更重审</td></tr>
+            <tr><td class="endpoint"><span class="method put">PUT</span>/api/v1/merchant/products/{id}</td><td>编辑商品</td><td>版本校验；上架状态约束</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/merchant/orders/{id}/accept</td><td>接单</td><td>幂等；仅待接单可接；超时自动退款</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/merchant/orders/{id}/reject</td><td>拒单</td><td>原因必填；触发全额退款</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/merchant/orders/{id}/ship</td><td>发货/备货完成</td><td>写物流/提货码；通知用户</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/merchant/verify</td><td>核销</td><td>幂等码；校验门店/状态/有效期/预约窗口</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/merchant/after-sales/{id}/decision</td><td>售后处理</td><td>同意/拒绝；超时转仲裁</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/merchant/withdrawals</td><td>申请提现</td><td>幂等；余额校验；转提现中</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/merchant/statements</td><td>账单与流水</td><td>按周期；仅本商户</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">7.4 平台后台接口</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:300px">接口</th><th>用途</th><th style="width:200px">关键规则</th></tr></thead>
+          <tbody>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/admin/audits/{id}/decision</td><td>审核通过/驳回</td><td>原因必填；写操作日志；二次确认</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/admin/merchants/{id}/status</td><td>停业/恢复/封禁</td><td>影响在途订单；原因必填</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/admin/orders</td><td>订单查询</td><td>多条件筛选；数据脱敏</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/admin/orders/{id}/freeze</td><td>冻结结算</td><td>只冻结资金，不影响履约</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/admin/arbitrations/{id}/rule</td><td>仲裁判定</td><td>全额/部分/驳回；责任方必填；执行退款</td></tr>
+            <tr><td class="endpoint"><span class="method put">PUT</span>/api/v1/admin/rules</td><td>发布规则版本</td><td>版本化；生效时间；影响新订单</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/admin/settlements/{batchId}/publish</td><td>发布结算批次</td><td>财务复核；借贷记账；幂等</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/admin/withdrawals/{id}/payout</td><td>确认线下打款</td><td>回填凭证；幂等；移动提现中余额</td></tr>
+            <tr><td class="endpoint"><span class="method post">POST</span>/api/v1/admin/withdrawals/{id}/reject</td><td>驳回提现</td><td>原因必填；退回可提现</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/admin/reconciliation</td><td>对账结果</td><td>展示差异与处理状态</td></tr>
+            <tr><td class="endpoint"><span class="method get">GET</span>/api/v1/admin/logs</td><td>操作日志</td><td>按类型/操作人/对象筛选</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">7.5 回调与错误码</h3>
+      <div class="grid-2">
+        <div class="card">
+          <span class="k">CALLBACK</span>
+          <h4>微信支付回调</h4>
+          <p><span class="code">POST /api/v1/callback/wechat/pay</span>：验签 → 校验金额 → 幂等更新支付单 → 更新订单 → 记账 → 发事件 → 返回成功。处理失败返回非 200，微信会重试；本地必须能承受重复回调。</p>
+        </div>
+        <div class="card">
+          <span class="k">CALLBACK</span>
+          <h4>微信退款回调</h4>
+          <p><span class="code">POST /api/v1/callback/wechat/refund</span>：按 refund_no 幂等；成功后更新退款单、订单/售后、资金冲回；失败记录原因并告警，不能吞掉。</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:230px">错误码</th><th>含义</th><th>处理建议</th></tr></thead>
+          <tbody>
+            <tr><td>ORDER_EXPIRED</td><td>订单已超时关闭</td><td>引导用户重新下单</td></tr>
+            <tr><td>STOCK_NOT_ENOUGH</td><td>库存不足</td><td>提示剩余数量或推荐替代</td></tr>
+            <tr><td>SLOT_FULL</td><td>预约时段已满</td><td>推荐最近可用时段</td></tr>
+            <tr><td>PAY_AMOUNT_MISMATCH</td><td>回调金额与支付单不一致</td><td>进入异常队列，人工处理</td></tr>
+            <tr><td>IDEMPOTENCY_CONFLICT</td><td>同一幂等键对应不同请求体</td><td>拒绝并告警，防止误用</td></tr>
+            <tr><td>VERIFY_CODE_INVALID</td><td>核销码无效/过期/非本店</td><td>返回具体原因，不允许强制核销</td></tr>
+            <tr><td>AFTER_SALE_NOT_ALLOWED</td><td>当前状态不支持售后</td><td>展示可售后条件</td></tr>
+            <tr><td>REFUND_AMOUNT_EXCEEDED</td><td>退款超过可退金额</td><td>返回剩余可退金额</td></tr>
+            <tr><td>WITHDRAW_BALANCE_NOT_ENOUGH</td><td>可提现余额不足</td><td>展示可提现余额</td></tr>
+            <tr><td>SETTLEMENT_NOT_DUE</td><td>结算项未到 due_at</td><td>不可提前结算</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sec" id="s8">
+      <div class="sec-intro"><span class="sec-no">08</span><h2>并发、一致性与幂等</h2></div>
+      <p class="lede">P0 的并发风险集中在五处：库存、预约时段、支付回调、退款额度、提现余额。策略是<strong>数据库条件更新 + 唯一约束 + 事务</strong>，不依赖 Redis 锁保证资金正确性。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:150px">场景</th><th>策略</th><th style="width:260px">关键约束</th></tr></thead>
+          <tbody>
+            <tr><td><strong>库存扣减</strong></td><td>下单只锁定库存，支付成功后转已售；取消/超时释放。</td><td>条件更新：<span class="code">stock - locked_stock - sold_stock >= ?</span>；失败不生成支付单。</td></tr>
+            <tr><td><strong>预约时段</strong></td><td>下单预占名额；取消/拒单释放。</td><td><span class="code">reserved_count &lt; capacity</span> 条件更新；唯一键 (product_id, slot_date, start_time)。</td></tr>
+            <tr><td><strong>支付回调</strong></td><td>按 transaction_id 唯一 + 状态条件更新。</td><td><span class="code">UPDATE payment_order SET status='PAID' WHERE status IN ('CREATED','PAYING')</span>；影响行数 0 视为重复。</td></tr>
+            <tr><td><strong>重复下单</strong></td><td>Idempotency-Key 唯一索引。</td><td>同一键返回原订单；请求体不一致返回 IDEMPOTENCY_CONFLICT。</td></tr>
+            <tr><td><strong>退款额度</strong></td><td>退款前锁订单行，累计退款不超过已支付。</td><td><span class="code">refunded_amount + ? &lt;= paid_amount</span>；退款单按 after_sale_id 唯一。</td></tr>
+            <tr><td><strong>结算唯一</strong></td><td>结算项 order_id 唯一，批次状态守卫。</td><td>已结算项不可重复入批次；批次 PUBLISHED 后不可再改。</td></tr>
+            <tr><td><strong>提现余额</strong></td><td>锁账户行，条件扣减。</td><td><span class="code">available_balance >= ?</span>；申请时同时写 withdrawing，事务内完成。</td></tr>
+            <tr><td><strong>记账幂等</strong></td><td>ledger_transaction.idempotency_key 唯一。</td><td>失败重试复用同一 key；已存在则直接返回原事务。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">事务边界</h3>
+      <div class="grid-2">
+        <div class="card">
+          <span class="k">MUST IN TX</span>
+          <h4>同一事务内完成</h4>
+          <p>订单状态变更 + 支付单更新；支付成功 + 记账；退款成功 + 退款单 + 记账；结算发布 + 批次/结算项状态 + 记账；提现申请 + 余额转移；核销 + 订单完成 + 结算项生成。</p>
+        </div>
+        <div class="card">
+          <span class="k">AFTER COMMIT</span>
+          <h4>提交后再异步</h4>
+          <p>订阅消息、站内信、统计更新、内容缓存刷新、对账导出。通过 Outbox 事件驱动，失败可重试，不影响主交易结果。</p>
+        </div>
+      </div>
+
+      <h3 class="sub">Outbox 与调度任务</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:190px">任务</th><th>频率/触发</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td>订单超时关闭</td><td>每分钟扫描 expire_at</td><td>关闭未支付订单，释放库存/时段，关闭支付单。</td></tr>
+            <tr><td>接单/发货超时</td><td>每分钟扫描</td><td>商户超时未接单自动退款；发货超时提醒并进入平台介入。</td></tr>
+            <tr><td>自动确认收货</td><td>每小时扫描</td><td>发货后 7 天未确认，自动完成订单。</td></tr>
+            <tr><td>预约确认超时</td><td>每分钟扫描</td><td>商户未在开始前 4 小时确认，自动取消退款。</td></tr>
+            <tr><td>售后超时转仲裁</td><td>每小时扫描</td><td>商户 48 小时未处理，转平台仲裁。</td></tr>
+            <tr><td>结算批次生成</td><td>每日一次</td><td>扫描 due_at 到期、未冻结的结算项，生成批次。</td></tr>
+            <tr><td>Outbox 投递</td><td>每秒/每 5 秒</td><td>发送通知事件；失败重试并记录次数。</td></tr>
+            <tr><td>对账任务</td><td>每日一次</td><td>支付/退款/账务/提现四本账核对，输出差异队列。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fineprint">定时任务使用数据库租约锁或 Redis 锁选主，保证同一任务只在一个实例执行；任务本身必须幂等，重复执行不产生重复退款或重复结算。</p>
+    </section>
+
+    <section class="sec" id="s9">
+      <div class="sec-intro"><span class="sec-no">09</span><h2>安全、权限与审计</h2></div>
+      <p class="lede">三端身份必须严格分离：消费者 Token 不能调用商户接口，商户 Token 不能跨门店，后台 Token 不能绕过 RBAC。资金与审核动作必须二次确认并留痕。</p>
+
+      <h3 class="sub">9.1 身份与鉴权</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:120px">端</th><th>登录方式</th><th>Token 内容</th><th>边界</th></tr></thead>
+          <tbody>
+            <tr><td>消费者小程序</td><td>wx.login → code2session</td><td>userId, unionId, role=CONSUMER</td><td>仅本人订单/地址/售后</td></tr>
+            <tr><td>消费者 H5</td><td>微信内网页授权；非微信环境短信</td><td>userId, unionId, role=CONSUMER</td><td>与小程序共享账户</td></tr>
+            <tr><td>商户中心</td><td>小程序登录 + 商户身份绑定</td><td>userId, merchantId, role=OWNER/CLERK</td><td>仅本门店；店员不可见金额/提现</td></tr>
+            <tr><td>平台后台</td><td>账号密码（财务/超管建议二次验证）</td><td>adminId, role, permissions</td><td>按权限点与数据域</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">9.2 权限与数据隔离</h3>
+      <div class="grid-2">
+        <div class="card">
+          <span class="k">RBAC</span>
+          <h4>最小必要权限</h4>
+          <p>超管、运营、审核员、客服/仲裁、财务、店长、店员。运营不碰钱、财务不碰商品、客服可判定但不能单独打款、店员不接触金额。权限点与 PRD SR-05 一致。</p>
+        </div>
+        <div class="card">
+          <span class="k">DATA SCOPE</span>
+          <h4>商户数据按门店隔离</h4>
+          <p>所有商户接口强制校验 merchant_id 归属；后台查询商户数据必须记录访问日志。平台财务可跨店查资金，但不可修改商品与订单履约状态。</p>
+        </div>
+      </div>
+
+      <h3 class="sub">9.3 敏感数据与接口安全</h3>
+      <ul class="mini" style="font-size:12.5px">
+        <li><strong>脱敏展示：</strong>后台用户手机号、地址、银行卡号默认脱敏；只有必要角色可申请查看完整值，并记录查看日志。</li>
+        <li><strong>加密存储：</strong>手机号、地址、提现银行卡完整卡号、身份证号等敏感字段加密存储（T9 已确认）；日志与导出文件不得包含明文。数据留存期限仍待法务确认 <span class="tbd">[TBD]</span>。</li>
+        <li><strong>回调验签：</strong>微信支付回调必须验证签名、时间戳与随机串，校验商户号与金额；拒绝重放。</li>
+        <li><strong>限流：</strong>登录、短信、下单、核销、提现申请按用户/IP/门店限流；异常频率触发风控标记。</li>
+        <li><strong>文件上传：</strong>限制类型与大小，私有读；图片 URL 使用临时签名；禁止上传可执行文件。</li>
+        <li><strong>密钥管理：</strong>微信支付商户号、APIv3 密钥与证书由平台 PC 后台配置并加密存储（T2 已确认），仅授权角色可管理；数据库密码、对象存储密钥放环境变量 / 配置中心；均不入代码库与前端包。</li>
+        <li><strong>审计：</strong>审核、规则、仲裁、退款、打款、商户状态、用户状态、权限变更全部写 operation_log，保留前后值。</li>
+      </ul>
+
+      <div class="callout red">
+        <span class="label">资金合规提示</span>
+        系统只实现“平台收款 + 虚拟账户 + 线下打款”的记账，不解决二清合规本身。收款账户隔离、商户结算协议、打款凭证留存与税务口径必须由财务/法务在上线前确认（对应 PRD Q1）。
+      </div>
+    </section>
+
+    <section class="sec" id="s10">
+      <div class="sec-intro"><span class="sec-no">10</span><h2>可观测性与部署</h2></div>
+      <p class="lede">P0 先保证“出问题能发现、能定位、能补偿”。不追求复杂平台，但支付、退款、结算、提现四条资金链路必须有指标、日志与告警。</p>
+
+      <h3 class="sub">10.1 指标与告警</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:190px">指标/告警</th><th>触发条件</th><th>处理动作</th></tr></thead>
+          <tbody>
+            <tr><td>支付回调失败率</td><td>失败数超过阈值或连续失败</td><td>告警研发 + 微信商户平台排查；订单保持待支付。</td></tr>
+            <tr><td>退款失败数</td><td>退款单 FAILED</td><td>自动重试；超过次数告警财务；售后单保持处理中。</td></tr>
+            <tr><td>记账不平衡</td><td>借方合计 ≠ 贷方合计</td><td>阻断批次发布；告警财务与研发；人工核对。</td></tr>
+            <tr><td>账户快照与流水差异</td><td>日终对账差异</td><td>冻结相关商户提现；生成差异报告；人工调整。</td></tr>
+            <tr><td>提现打款失败</td><td>提现单 FAILED</td><td>退回可提现；通知商户；财务复核。</td></tr>
+            <tr><td>结算批次积压</td><td>PENDING 超过预期</td><td>提醒财务复核；检查冻结与退款异常。</td></tr>
+            <tr><td>核销异常</td><td>同一码高频核销/异店核销</td><td>拒绝并记录；必要时暂停门店核销权限。</td></tr>
+            <tr><td>接口错误率/延迟</td><td>5xx 或 P99 超阈值</td><td>告警值班；检查数据库连接与慢查询。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">10.2 部署拓扑</h3>
+      <div class="arch" style="margin-top:12px">
+        <div class="arch-row">
+          <div class="arch-label">入口</div>
+          <div class="arch-nodes">
+            <div class="node blue"><b>Nginx / 负载均衡</b><small>HTTPS · 限流 · 静态资源</small></div>
+            <div class="node blue"><b>小程序 / H5 / PC</b><small>独立域名或路径</small></div>
+          </div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label">应用</div>
+          <div class="arch-nodes">
+            <div class="node"><b>应用实例 A</b><small>模块化单体</small></div>
+            <div class="node"><b>应用实例 B</b><small>无状态，可水平扩展</small></div>
+            <div class="node"><b>调度任务</b><small>租约锁选主执行</small></div>
+          </div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label">数据</div>
+          <div class="arch-nodes">
+            <div class="node dark"><b>MySQL 主库</b><small>交易与账务</small></div>
+            <div class="node dark"><b>MySQL 只读/备份</b><small>报表与恢复</small></div>
+            <div class="node dark"><b>Redis</b><small>缓存/锁/限流</small></div>
+            <div class="node"><b>对象存储</b><small>图片/凭证</small></div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">10.3 环境、备份与发布</h3>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead><tr><th style="width:150px">项目</th><th>要求</th></tr></thead>
+          <tbody>
+            <tr><td>环境</td><td>dev / test / staging / prod；staging 使用微信支付沙箱或独立小额商户号；数据不跨环境复制。</td></tr>
+            <tr><td>配置</td><td>按环境分离；微信支付商户号、APIv3 密钥与证书在平台 PC 后台加密配置（T2），其余密钥走环境变量 / 配置中心；不入前端与代码库；变更需审计。</td></tr>
+            <tr><td>数据库备份</td><td>每日全量 + 增量 binlog；恢复演练至少一次；账务表不可只依赖应用层备份。</td></tr>
+            <tr><td>发布</td><td>先灰度到单实例，再全量；数据库变更使用向前兼容的迁移脚本；资金相关变更必须双人复核。</td></tr>
+            <tr><td>回滚</td><td>应用可回滚；数据库迁移尽量可回滚或保持兼容；禁止用回滚删除已产生的资金流水。</td></tr>
+            <tr><td>日志留存</td><td>操作日志与资金流水长期保留；应用日志按合规要求留存 <span class="tbd">[TBD 法务]</span>。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sec" id="s11">
+      <div class="sec-intro"><span class="sec-no">11</span><h2>确认结论（T1–T10）</h2></div>
+      <p class="lede">T1–T10 已由业务方回复，结论已回填正文。仍待确认的局部项：短信服务商（T6）、提现手续费率（T8）、数据留存期限（T9）；其余项按确认结论执行。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:46px">编号</th><th style="width:250px">问题</th><th>确认结论</th><th style="width:130px">影响</th><th style="width:92px">状态</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">T1</td><td>后端语言与框架最终选型？团队现有栈是什么？</td><td>Python 3.9 + Django 4.2 LTS + DRF，模块化单体；本文领域模型按该栈落地。</td><td>模块落地、招聘与运维</td><td><span class="pill">已确认</span></td></tr>
+            <tr><td class="mono">T2</td><td>微信支付商户主体、收款账户与结算资质如何安排？</td><td>平台 PC 后台配置微信支付商户号、APIv3 密钥与证书并加密保存；代码只读配置，不硬编码。</td><td>支付、退款、合规</td><td><span class="pill">已确认</span></td></tr>
+            <tr><td class="mono">T3</td><td>小程序主体与经营类目是否覆盖餐饮、健身、美容、教育等类目？</td><td>覆盖。由运营 / 法务负责类目申请与资质维护，技术侧按多类目建模。</td><td>类目审核、资质</td><td><span class="pill">已确认</span></td></tr>
+            <tr><td class="mono">T4</td><td>H5 域名、ICP 与微信内 H5 支付是否具备？</td><td>具备：H5 域名、ICP 备案与微信内 H5 支付均可用。</td><td>H5 登录与支付</td><td><span class="pill">已确认</span></td></tr>
+            <tr><td class="mono">T5</td><td>商户中心与消费者端是同一个微信小程序，还是两个小程序？</td><td>同一个微信小程序；商户中心是「个人中心」内的一个菜单，按角色路由进入。</td><td>登录、审核、发布</td><td><span class="pill">已确认</span></td></tr>
+            <tr><td class="mono">T6</td><td>地图与地址服务使用腾讯位置服务还是高德？短信服务商？</td><td>地图 / 地址使用高德；短信服务商暂未确定，先建 SmsProvider 适配层，选定后替换实现。</td><td>定位、地址、验证码</td><td><span class="pill amber">部分确认</span></td></tr>
+            <tr><td class="mono">T7</td><td>线下打款是否需要对接银行代付/批量转账，还是纯人工网银？</td><td>P0 采用人工网银转账 + 回单上传，不对接银行代付；回填回单号与凭证后记账。</td><td>提现效率与凭证</td><td><span class="pill">已确认</span></td></tr>
+            <tr><td class="mono">T8</td><td>结算周期 N 天、佣金率、提现手续费的具体数值？</td><td>N 默认 7 天、按商户可配；佣金按类目默认 + 商户覆盖；提现手续费率待财务确认，作为配置项预留。</td><td>结算项、对账、商户协议</td><td><span class="pill amber">部分确认</span></td></tr>
+            <tr><td class="mono">T9</td><td>用户手机号、地址、银行卡等数据的留存期限与加密要求？</td><td>敏感字段加密存储（手机号、地址、银行卡、身份证号）；留存期限待法务确认。</td><td>合规、存储设计</td><td><span class="pill amber">部分确认</span></td></tr>
+            <tr><td class="mono">T10</td><td>后续是否支持跨店购物车、连锁多门店、会员积分？</td><td>P0 均不支持；扩展时新增订单组 / 商户层级，不修改 P0 核心语义。</td><td>订单拆分、账户层级</td><td><span class="pill">已确认</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout teal">
+        <span class="label">下一步</span>
+        T1–T10 的结论已回填第 1、4、5、6、9 章：数据库与资金规则可冻结，接口契约与 P0 开发可并行推进。剩余 TBD（短信服务商、提现手续费率、数据留存期限）通过适配层、配置项隔离，禁止在代码中写死。资金模块仍按「记账 + 对账 → 支付回调 → 履约核销 → 结算提现」的顺序实现，避免界面先行、账务返工。
+      </div>
+    </section>
+
+    <footer style="margin-top:10px;padding-top:24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
+      <span>异业联盟商城系统 · 技术方案与数据模型 v1.0</span>
+      <span>2026-11-07 · T1–T10 已回复 · 业务规则以 PRD v0.2 为准</span>
+    </footer>
+  </main>
+</div>
+<script>
+(function(){
+  'use strict';
+  var progressBar = document.getElementById('progressBar');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section[id]'));
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll('#tocNav a'));
+
+  function onScroll(){
+    var y = window.scrollY || window.pageYOffset || 0;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    if(progressBar){ progressBar.style.width = (h > 0 ? Math.min(100, y / h * 100) : 0) + '%'; }
+    var current = sections.length ? sections[0].id : '';
+    sections.forEach(function(s){
+      if(s.getBoundingClientRect().top <= 140){ current = s.id; }
+    });
+    tocLinks.forEach(function(a){
+      a.classList.toggle('is-active', a.getAttribute('href') === '#' + current);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive:true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tabs]'), function(group){
+    var btns = Array.prototype.slice.call(group.querySelectorAll('[data-tab-btn]'));
+    btns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        btns.forEach(function(b){ b.classList.toggle('is-on', b === btn); });
+        Array.prototype.forEach.call(group.querySelectorAll('[data-tab-panel]'), function(p){
+          p.classList.toggle('is-on', p.getAttribute('data-tab-panel') === btn.getAttribute('data-tab-btn'));
+        });
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

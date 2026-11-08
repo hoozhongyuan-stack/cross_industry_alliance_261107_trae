@@ -1,0 +1,1472 @@
+openapi: 3.0.3
+info:
+  title: 异业联盟商城 API
+  version: 0.1.0
+  description: 消费者 / 商户 / 平台三端共用领域服务。金额单位为「分」，时间为 Asia/Shanghai。
+paths:
+  /api/v1/health/:
+    get:
+      operationId: v1_health_retrieve
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+  /api/v1/categories/:
+    get:
+      operationId: v1_categories_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/categories/{id}/:
+    get:
+      operationId: v1_categories_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 类目.
+        required: true
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/products/:
+    get:
+      operationId: v1_products_list
+      description: 消费者端商品浏览：只暴露在售商品。
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - in: query
+        name: merchant
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: type
+        schema:
+          type: string
+          title: 商品类型
+          enum:
+          - PHYSICAL
+          - SERVICE
+        description: |-
+          * `PHYSICAL` - 实物商品
+          * `SERVICE` - 到店服务
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+  /api/v1/products/{id}/:
+    get:
+      operationId: v1_products_retrieve
+      description: 消费者端商品浏览：只暴露在售商品。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 商品/服务.
+        required: true
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/merchants/:
+    get:
+      operationId: v1_merchants_list
+      description: 消费者端门店浏览：只暴露营业中的商户。
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - in: query
+        name: city
+        schema:
+          type: string
+      - in: query
+        name: district
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMerchantList'
+          description: ''
+  /api/v1/merchants/{id}/:
+    get:
+      operationId: v1_merchants_retrieve
+      description: 消费者端门店浏览：只暴露营业中的商户。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 商户.
+        required: true
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Merchant'
+          description: ''
+  /api/v1/orders/:
+    get:
+      operationId: v1_orders_list
+      description: 当前登录用户的订单（列表 / 详情）。商户端与平台端后续按角色扩展。
+      parameters:
+      - in: query
+        name: merchant
+        schema:
+          type: integer
+      - in: query
+        name: order_type
+        schema:
+          type: string
+          title: 订单类型
+          enum:
+          - EXPRESS
+          - PICKUP
+          - SERVICE
+        description: |-
+          * `EXPRESS` - 快递配送
+          * `PICKUP` - 到店自提
+          * `SERVICE` - 到店服务
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          title: 主状态
+          enum:
+          - AFTER_SALE
+          - CLOSED
+          - COMPLETED
+          - FULFILLING
+          - PENDING_ACCEPT
+          - PENDING_FULFILL
+          - PENDING_PAYMENT
+          - REFUNDED
+          - REFUNDING
+        description: |-
+          * `PENDING_PAYMENT` - 待支付
+          * `PENDING_ACCEPT` - 待接单
+          * `PENDING_FULFILL` - 待履约
+          * `FULFILLING` - 履约中
+          * `COMPLETED` - 已完成
+          * `AFTER_SALE` - 售后中
+          * `REFUNDING` - 退款中
+          * `REFUNDED` - 已退款
+          * `CLOSED` - 已关闭
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderListList'
+          description: ''
+  /api/v1/orders/{id}/:
+    get:
+      operationId: v1_orders_retrieve
+      description: 当前登录用户的订单（列表 / 详情）。商户端与平台端后续按角色扩展。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 订单.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+  /api/v1/accounts/auth/token/:
+    post:
+      operationId: v1_accounts_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/accounts/auth/refresh/:
+    post:
+      operationId: v1_accounts_auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/accounts/me/:
+    get:
+      operationId: v1_accounts_me_retrieve
+      description: 当前登录用户与所属商户身份。
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/v1/accounts/staff/users/:
+    get:
+      operationId: v1_accounts_staff_users_retrieve
+      description: 仅平台后台可用：用户列表（按手机号 / 昵称检索）。
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUser'
+          description: ''
+components:
+  schemas:
+    AppUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          nullable: true
+          title: 手机号
+        nickname:
+          type: string
+          readOnly: true
+          title: 昵称
+        avatar_url:
+          type: string
+          format: uri
+          readOnly: true
+          title: 头像
+        gender:
+          allOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          readOnly: true
+          title: 性别
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AppUserStatusEnum'
+          readOnly: true
+          title: 状态
+        identities:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserIdentity'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+      required:
+      - avatar_url
+      - created_at
+      - gender
+      - id
+      - identities
+      - nickname
+      - phone
+      - status
+    AppUserStatusEnum:
+      enum:
+      - ACTIVE
+      - DISABLED
+      type: string
+      description: |-
+        * `ACTIVE` - 正常
+        * `DISABLED` - 禁用
+    Appointment:
+      type: object
+      properties:
+        slot_id:
+          type: integer
+          nullable: true
+          title: 时段
+          readOnly: true
+        slot_date:
+          type: string
+          format: date
+          title: 预约日期
+        start_time:
+          type: string
+          format: time
+          title: 开始时间
+        end_time:
+          type: string
+          format: time
+          title: 结束时间
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentStatusEnum'
+          title: 状态
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 确认时间
+        remark:
+          type: string
+          title: 备注
+          maxLength: 120
+      required:
+      - end_time
+      - slot_date
+      - slot_id
+      - start_time
+    AppointmentStatusEnum:
+      enum:
+      - PENDING_CONFIRM
+      - CONFIRMED
+      - COMPLETED
+      - CANCELLED
+      - NO_SHOW
+      type: string
+      description: |-
+        * `PENDING_CONFIRM` - 待确认
+        * `CONFIRMED` - 已确认
+        * `COMPLETED` - 已完成
+        * `CANCELLED` - 已取消
+        * `NO_SHOW` - 爽约
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parent:
+          type: integer
+          nullable: true
+          title: 上级类目
+        name:
+          type: string
+          title: 类目名
+          maxLength: 40
+        icon_url:
+          type: string
+          format: uri
+          title: 图标
+          maxLength: 200
+        level:
+          type: integer
+          title: 层级
+        sort:
+          type: integer
+          title: 排序
+      required:
+      - id
+      - name
+    ChannelEnum:
+      enum:
+      - WECHAT_MINI
+      - WECHAT_H5
+      - APP
+      type: string
+      description: |-
+        * `WECHAT_MINI` - 微信小程序
+        * `WECHAT_H5` - 微信 H5
+        * `APP` - APP
+    FulfillmentStatusEnum:
+      enum:
+      - NOT_STARTED
+      - APPOINTMENT_CONFIRMED
+      - SHIPPED
+      - PICKUP_READY
+      - VERIFY_READY
+      - DONE
+      type: string
+      description: |-
+        * `NOT_STARTED` - 未开始
+        * `APPOINTMENT_CONFIRMED` - 预约已确认
+        * `SHIPPED` - 已发货
+        * `PICKUP_READY` - 待自提
+        * `VERIFY_READY` - 待核销
+        * `DONE` - 已履约
+    GenderEnum:
+      enum:
+      - U
+      - M
+      - F
+      type: string
+      description: |-
+        * `U` - 未知
+        * `M` - 男
+        * `F` - 女
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        time:
+          type: string
+        db:
+          type: string
+      required:
+      - db
+      - service
+      - status
+      - time
+    Me:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          nullable: true
+          title: 手机号
+        nickname:
+          type: string
+          readOnly: true
+          title: 昵称
+        avatar_url:
+          type: string
+          format: uri
+          readOnly: true
+          title: 头像
+        gender:
+          allOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          readOnly: true
+          title: 性别
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AppUserStatusEnum'
+          readOnly: true
+          title: 状态
+        identities:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserIdentity'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+        merchant_roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MerchantRole'
+          readOnly: true
+        is_staff:
+          type: boolean
+      required:
+      - avatar_url
+      - created_at
+      - gender
+      - id
+      - identities
+      - is_staff
+      - merchant_roles
+      - nickname
+      - phone
+      - status
+    Merchant:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        merchant_no:
+          type: string
+          title: 商户编号
+          maxLength: 32
+        name:
+          type: string
+          title: 商户名称
+          maxLength: 80
+        short_name:
+          type: string
+          title: 简称
+          maxLength: 40
+        category_id:
+          type: integer
+          nullable: true
+          title: 主营类目
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+          default: ''
+        logo_url:
+          type: string
+          format: uri
+          title: Logo
+          maxLength: 200
+        description:
+          type: string
+          title: 简介
+        contact_phone:
+          type: string
+          title: 联系电话
+          maxLength: 20
+        city:
+          type: string
+          title: 市
+          maxLength: 32
+        district:
+          type: string
+          title: 区县
+          maxLength: 32
+        address:
+          type: string
+          title: 详细地址
+          maxLength: 200
+        lng:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+          title: 经度
+        lat:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+          title: 纬度
+        business_hours:
+          title: 营业时间
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MerchantStatusEnum'
+          title: 状态
+        opened_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 开店时间
+      required:
+      - category_id
+      - category_name
+      - id
+      - merchant_no
+      - name
+    MerchantRole:
+      type: object
+      properties:
+        merchant_id:
+          type: integer
+        merchant_name:
+          type: string
+        role:
+          type: string
+      required:
+      - merchant_id
+      - merchant_name
+      - role
+    MerchantStatusEnum:
+      enum:
+      - PENDING
+      - ACTIVE
+      - REJECTED
+      - SUSPENDED
+      - CLOSED
+      type: string
+      description: |-
+        * `PENDING` - 待审核
+        * `ACTIVE` - 营业中
+        * `REJECTED` - 审核驳回
+        * `SUSPENDED` - 已冻结
+        * `CLOSED` - 已关店
+    OperatorTypeEnum:
+      enum:
+      - USER
+      - MERCHANT
+      - PLATFORM
+      - SYSTEM
+      type: string
+      description: |-
+        * `USER` - 用户
+        * `MERCHANT` - 商户
+        * `PLATFORM` - 平台
+        * `SYSTEM` - 系统
+    OrderDelivery:
+      type: object
+      properties:
+        type:
+          allOf:
+          - $ref: '#/components/schemas/OrderDeliveryTypeEnum'
+          title: 配送方式
+        address_snapshot:
+          title: 地址快照
+        receiver_name:
+          type: string
+          title: 收货人
+          maxLength: 40
+        receiver_phone:
+          type: string
+          title: 收货电话
+          maxLength: 20
+        logistics_company:
+          type: string
+          title: 物流公司
+          maxLength: 40
+        logistics_no:
+          type: string
+          title: 物流单号
+          maxLength: 64
+        pickup_code:
+          type: string
+          title: 提货码
+          maxLength: 12
+        shipped_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 发货时间
+        received_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 签收时间
+      required:
+      - type
+    OrderDeliveryTypeEnum:
+      enum:
+      - EXPRESS
+      - PICKUP
+      type: string
+      description: |-
+        * `EXPRESS` - 快递
+        * `PICKUP` - 自提
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        order_no:
+          type: string
+          title: 订单号
+          maxLength: 32
+        merchant_id:
+          type: integer
+          title: 商户
+          readOnly: true
+        merchant_name:
+          type: string
+          readOnly: true
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          title: 订单类型
+        order_type_label:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          title: 主状态
+        status_label:
+          type: string
+          readOnly: true
+        payable_amount:
+          type: integer
+          title: 应付金额（分）
+        paid_amount:
+          type: integer
+          title: 实付金额（分）
+        refunded_amount:
+          type: integer
+          title: 累计退款（分）
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 支付时间
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 完成时间（结算起点）
+        fulfillment_status:
+          allOf:
+          - $ref: '#/components/schemas/FulfillmentStatusEnum'
+          title: 履约状态
+        product_amount:
+          type: integer
+          title: 商品金额（分）
+        delivery_fee:
+          type: integer
+          title: 配送费（分）
+        commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+          title: 佣金率快照
+        commission_amount:
+          type: integer
+          title: 佣金（分）
+        contact_json:
+          title: 联系人快照
+        remark:
+          type: string
+          title: 用户备注
+          maxLength: 200
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+        delivery:
+          allOf:
+          - $ref: '#/components/schemas/OrderDelivery'
+          readOnly: true
+        verify_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VerifyCode'
+          readOnly: true
+        appointment:
+          allOf:
+          - $ref: '#/components/schemas/Appointment'
+          readOnly: true
+        status_logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderStatusLog'
+          readOnly: true
+      required:
+      - appointment
+      - created_at
+      - delivery
+      - id
+      - items
+      - merchant_id
+      - merchant_name
+      - order_type
+      - order_type_label
+      - status_label
+      - status_logs
+      - verify_codes
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product_id:
+          type: integer
+          nullable: true
+          title: 商品
+          readOnly: true
+        sku_id:
+          type: integer
+          nullable: true
+          title: 规格
+          readOnly: true
+        title:
+          type: string
+          title: 商品标题快照
+          maxLength: 120
+        price:
+          type: integer
+          title: 成交单价（分）
+        quantity:
+          type: integer
+          title: 数量
+        amount:
+          type: integer
+          title: 行金额（分）
+        refund_amount:
+          type: integer
+          title: 行退款（分）
+        snapshot_json:
+          title: 商品快照
+      required:
+      - amount
+      - id
+      - price
+      - product_id
+      - sku_id
+      - title
+    OrderList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        order_no:
+          type: string
+          title: 订单号
+          maxLength: 32
+        merchant_id:
+          type: integer
+          title: 商户
+          readOnly: true
+        merchant_name:
+          type: string
+          readOnly: true
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          title: 订单类型
+        order_type_label:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          title: 主状态
+        status_label:
+          type: string
+          readOnly: true
+        payable_amount:
+          type: integer
+          title: 应付金额（分）
+        paid_amount:
+          type: integer
+          title: 实付金额（分）
+        refunded_amount:
+          type: integer
+          title: 累计退款（分）
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 支付时间
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 完成时间（结算起点）
+      required:
+      - created_at
+      - id
+      - merchant_id
+      - merchant_name
+      - order_type
+      - order_type_label
+      - status_label
+    OrderStatusEnum:
+      enum:
+      - PENDING_PAYMENT
+      - PENDING_ACCEPT
+      - PENDING_FULFILL
+      - FULFILLING
+      - COMPLETED
+      - AFTER_SALE
+      - REFUNDING
+      - REFUNDED
+      - CLOSED
+      type: string
+      description: |-
+        * `PENDING_PAYMENT` - 待支付
+        * `PENDING_ACCEPT` - 待接单
+        * `PENDING_FULFILL` - 待履约
+        * `FULFILLING` - 履约中
+        * `COMPLETED` - 已完成
+        * `AFTER_SALE` - 售后中
+        * `REFUNDING` - 退款中
+        * `REFUNDED` - 已退款
+        * `CLOSED` - 已关闭
+    OrderStatusLog:
+      type: object
+      properties:
+        from_status:
+          type: string
+          title: 原状态
+          maxLength: 24
+        to_status:
+          type: string
+          title: 新状态
+          maxLength: 24
+        event:
+          type: string
+          title: 事件
+          maxLength: 40
+        operator_type:
+          allOf:
+          - $ref: '#/components/schemas/OperatorTypeEnum'
+          title: 操作方
+        operator_name:
+          type: string
+          title: 操作人
+          maxLength: 60
+        reason:
+          type: string
+          title: 原因
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+      required:
+      - created_at
+      - event
+      - from_status
+      - to_status
+    OrderTypeEnum:
+      enum:
+      - EXPRESS
+      - PICKUP
+      - SERVICE
+      type: string
+      description: |-
+        * `EXPRESS` - 快递配送
+        * `PICKUP` - 到店自提
+        * `SERVICE` - 到店服务
+    PaginatedMerchantList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Merchant'
+    PaginatedOrderListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderList'
+    PaginatedProductListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        merchant_id:
+          type: integer
+          title: 商户
+          readOnly: true
+        merchant_name:
+          type: string
+          readOnly: true
+        category_id:
+          type: integer
+          nullable: true
+          title: 类目
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+          default: ''
+        type:
+          allOf:
+          - $ref: '#/components/schemas/ProductTypeEnum'
+          title: 商品类型
+        type_label:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          title: 标题
+          maxLength: 120
+        subtitle:
+          type: string
+          title: 副标题
+          maxLength: 200
+        cover_url:
+          type: string
+          format: uri
+          title: 封面
+          maxLength: 200
+        images:
+          title: 图片列表
+        description:
+          type: string
+          title: 详情
+        price:
+          type: integer
+          title: 展示价（分）
+        original_price:
+          type: integer
+          title: 划线价（分）
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ProductStatusEnum'
+          title: 状态
+        verify_days:
+          type: integer
+          title: 核销有效期（天）
+        appointment_required:
+          type: boolean
+          title: 需预约
+        delivery_types:
+          title: 履约方式
+        sold_count:
+          type: integer
+          title: 已售件数
+        skus:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSku'
+          readOnly: true
+      required:
+      - category_id
+      - category_name
+      - id
+      - merchant_id
+      - merchant_name
+      - skus
+      - title
+      - type
+      - type_label
+    ProductList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        merchant_id:
+          type: integer
+          title: 商户
+          readOnly: true
+        merchant_name:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/ProductTypeEnum'
+          title: 商品类型
+        title:
+          type: string
+          title: 标题
+          maxLength: 120
+        subtitle:
+          type: string
+          title: 副标题
+          maxLength: 200
+        cover_url:
+          type: string
+          format: uri
+          title: 封面
+          maxLength: 200
+        price:
+          type: integer
+          title: 展示价（分）
+        original_price:
+          type: integer
+          title: 划线价（分）
+        sold_count:
+          type: integer
+          title: 已售件数
+        delivery_types:
+          title: 履约方式
+      required:
+      - id
+      - merchant_id
+      - merchant_name
+      - title
+      - type
+    ProductSku:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        sku_code:
+          type: string
+          title: 规格编码
+          maxLength: 40
+        spec_json:
+          title: 规格快照
+        price:
+          type: integer
+          title: 售价（分）
+        available_stock:
+          type: integer
+          readOnly: true
+      required:
+      - available_stock
+      - id
+      - price
+      - sku_code
+    ProductStatusEnum:
+      enum:
+      - DRAFT
+      - PENDING
+      - ON_SALE
+      - OFF_SALE
+      - REJECTED
+      type: string
+      description: |-
+        * `DRAFT` - 草稿
+        * `PENDING` - 待审核
+        * `ON_SALE` - 在售
+        * `OFF_SALE` - 已下架
+        * `REJECTED` - 审核驳回
+    ProductTypeEnum:
+      enum:
+      - PHYSICAL
+      - SERVICE
+      type: string
+      description: |-
+        * `PHYSICAL` - 实物商品
+        * `SERVICE` - 到店服务
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - phone
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+      required:
+      - access
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
+    UserIdentity:
+      type: object
+      properties:
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          title: 渠道
+        open_id:
+          type: string
+          maxLength: 64
+        union_id:
+          type: string
+          maxLength: 64
+      required:
+      - channel
+      - open_id
+    VerifyCode:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          title: 核销码
+          maxLength: 20
+        type:
+          allOf:
+          - $ref: '#/components/schemas/VerifyCodeTypeEnum'
+          title: 类型
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VerifyCodeStatusEnum'
+          title: 状态
+        valid_from:
+          type: string
+          format: date-time
+          nullable: true
+          title: 生效时间
+        valid_to:
+          type: string
+          format: date-time
+          nullable: true
+          title: 失效时间
+        used_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: 核销时间
+      required:
+      - code
+      - id
+    VerifyCodeStatusEnum:
+      enum:
+      - ACTIVE
+      - USED
+      - EXPIRED
+      - INVALID
+      type: string
+      description: |-
+        * `ACTIVE` - 有效
+        * `USED` - 已核销
+        * `EXPIRED` - 已过期
+        * `INVALID` - 已作废
+    VerifyCodeTypeEnum:
+      enum:
+      - VERIFY
+      - PICKUP
+      type: string
+      description: |-
+        * `VERIFY` - 核销码
+        * `PICKUP` - 提货码
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
