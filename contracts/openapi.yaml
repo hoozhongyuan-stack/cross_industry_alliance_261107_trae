@@ -214,7 +214,7 @@ paths:
   /api/v1/orders/:
     get:
       operationId: v1_orders_list
-      description: 当前登录用户的订单（列表 / 详情）。商户端与平台端后续按角色扩展。
+      description: 当前登录用户的订单（列表 / 创建 / 详情）。商户端与平台端后续按角色扩展。
       parameters:
       - in: query
         name: merchant
@@ -288,10 +288,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedOrderListList'
           description: ''
+    post:
+      operationId: v1_orders_create
+      description: 当前登录用户的订单（列表 / 创建 / 详情）。商户端与平台端后续按角色扩展。
+      tags:
+      - order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderCreateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderCreateInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
   /api/v1/orders/{id}/:
     get:
       operationId: v1_orders_retrieve
-      description: 当前登录用户的订单（列表 / 详情）。商户端与平台端后续按角色扩展。
+      description: 当前登录用户的订单（列表 / 创建 / 详情）。商户端与平台端后续按角色扩展。
       parameters:
       - in: path
         name: id
@@ -310,6 +337,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderDetail'
+          description: ''
+  /api/v1/orders/{id}/pay/:
+    post:
+      operationId: v1_orders_pay_create
+      description: 发起支付（Mock 微信统一下单）。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PayInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PayInputRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/orders/{id}/cancel/:
+    post:
+      operationId: v1_orders_cancel_create
+      description: 取消待支付订单，释放库存与预约时段。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CancelInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CancelInputRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
           description: ''
   /api/v1/cart/:
     get:
@@ -556,6 +649,32 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/callback/wechat/pay/:
+    post:
+      operationId: v1_callback_wechat_pay_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallbackPayloadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CallbackPayloadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CallbackPayloadRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallbackAck'
+          description: ''
   /api/v1/accounts/auth/token/:
     post:
       operationId: v1_accounts_auth_token_create
@@ -739,6 +858,18 @@ components:
       - slot_date
       - slot_id
       - start_time
+    AppointmentInputRequest:
+      type: object
+      properties:
+        slot_id:
+          type: integer
+          minimum: 1
+        remark:
+          type: string
+          default: ''
+          maxLength: 120
+      required:
+      - slot_id
     AppointmentStatusEnum:
       enum:
       - PENDING_CONFIRM
@@ -753,6 +884,42 @@ components:
         * `COMPLETED` - 已完成
         * `CANCELLED` - 已取消
         * `NO_SHOW` - 爽约
+    CallbackAck:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+      - code
+      - message
+    CallbackPayloadRequest:
+      type: object
+      properties:
+        payment_no:
+          type: string
+          minLength: 1
+        transaction_id:
+          type: string
+          minLength: 1
+        amount:
+          type: integer
+        trade_state:
+          type: string
+          minLength: 1
+      required:
+      - amount
+      - payment_no
+      - trade_state
+      - transaction_id
+    CancelInputRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 200
     CartItemInputRequest:
       type: object
       properties:
@@ -798,6 +965,35 @@ components:
       required:
       - id
       - name
+    Channel72aEnum:
+      enum:
+      - WECHAT_MINI
+      - WECHAT_H5
+      type: string
+      description: |-
+        * `WECHAT_MINI` - WECHAT_MINI
+        * `WECHAT_H5` - WECHAT_H5
+    ContactInputRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 40
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+        address_id:
+          type: integer
+          nullable: true
+        address_detail:
+          type: string
+          default: ''
+          maxLength: 120
+      required:
+      - name
+      - phone
     EnvelopeResponse:
       type: object
       description: 仅用于 OpenAPI 快照描述统一响应结构。
@@ -1033,6 +1229,43 @@ components:
         * `MERCHANT` - 商户
         * `PLATFORM` - 平台
         * `SYSTEM` - 系统
+    OrderCreateInputOrderTypeEnum:
+      enum:
+      - EXPRESS
+      - PICKUP
+      - SERVICE
+      type: string
+      description: |-
+        * `EXPRESS` - EXPRESS
+        * `PICKUP` - PICKUP
+        * `SERVICE` - SERVICE
+    OrderCreateInputRequest:
+      type: object
+      properties:
+        merchant_id:
+          type: integer
+          minimum: 1
+        order_type:
+          $ref: '#/components/schemas/OrderCreateInputOrderTypeEnum'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemInputRequest'
+        contact:
+          $ref: '#/components/schemas/ContactInputRequest'
+        appointment:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentInputRequest'
+          nullable: true
+        remark:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - contact
+      - items
+      - merchant_id
+      - order_type
     OrderDelivery:
       type: object
       properties:
@@ -1238,6 +1471,23 @@ components:
       - product_id
       - sku_id
       - title
+    OrderItemInputRequest:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          minimum: 1
+        sku_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        quantity:
+          type: integer
+          maximum: 99
+          minimum: 1
+      required:
+      - product_id
+      - quantity
     OrderList:
       type: object
       properties:
@@ -1448,6 +1698,13 @@ components:
           minimum: 1
         selected:
           type: boolean
+    PayInputRequest:
+      type: object
+      properties:
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/Channel72aEnum'
+          default: WECHAT_MINI
     Product:
       type: object
       properties:
@@ -1705,12 +1962,22 @@ components:
           minLength: 1
       required:
       - refresh
+    UserChannelEnum:
+      enum:
+      - WECHAT_MINI
+      - WECHAT_H5
+      - APP
+      type: string
+      description: |-
+        * `WECHAT_MINI` - 微信小程序
+        * `WECHAT_H5` - 微信 H5
+        * `APP` - APP
     UserIdentity:
       type: object
       properties:
         channel:
           allOf:
-          - $ref: '#/components/schemas/UserIdentityChannelEnum'
+          - $ref: '#/components/schemas/UserChannelEnum'
           title: 渠道
         open_id:
           type: string
@@ -1721,16 +1988,6 @@ components:
       required:
       - channel
       - open_id
-    UserIdentityChannelEnum:
-      enum:
-      - WECHAT_MINI
-      - WECHAT_H5
-      - APP
-      type: string
-      description: |-
-        * `WECHAT_MINI` - 微信小程序
-        * `WECHAT_H5` - 微信 H5
-        * `APP` - APP
     VerifyCode:
       type: object
       properties:
@@ -1787,14 +2044,6 @@ components:
       description: |-
         * `VERIFY` - 核销码
         * `PICKUP` - 提货码
-    WechatLoginChannelEnum:
-      enum:
-      - WECHAT_MINI
-      - WECHAT_H5
-      type: string
-      description: |-
-        * `WECHAT_MINI` - WECHAT_MINI
-        * `WECHAT_H5` - WECHAT_H5
     WechatLoginRequest:
       type: object
       properties:
@@ -1804,7 +2053,7 @@ components:
           maxLength: 64
         channel:
           allOf:
-          - $ref: '#/components/schemas/WechatLoginChannelEnum'
+          - $ref: '#/components/schemas/Channel72aEnum'
           default: WECHAT_MINI
       required:
       - code

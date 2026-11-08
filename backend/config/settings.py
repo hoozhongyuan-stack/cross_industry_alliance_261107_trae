@@ -141,7 +141,10 @@ SPECTACULAR_SETTINGS = {
         "ProductStatusEnum": "apps.catalog.models.Product.Status",
         "ProductTypeEnum": "apps.catalog.models.Product.Type",
         "OrderStatusEnum": "apps.orders.models.Order.Status",
+        "OrderTypeEnum": "apps.orders.models.Order.Type",
         "PaymentStatusEnum": "apps.payments.models.PaymentOrder.Status",
+        "PaymentChannelEnum": "apps.payments.models.PaymentOrder.Channel",
+        "UserChannelEnum": "apps.accounts.models.UserIdentity.Channel",
         "RefundStatusEnum": "apps.payments.models.RefundOrder.Status",
         "AfterSaleStatusEnum": "apps.aftersales.models.AfterSale.Status",
         "WithdrawalStatusEnum": "apps.ledger.models.WithdrawalOrder.Status",
@@ -163,3 +166,4 @@ WECHAT_MOCK_MODE = env_bool("WECHAT_MOCK_MODE", DEBUG)
 SMS_MOCK_MODE = env_bool("SMS_MOCK_MODE", DEBUG)
 SMS_CODE_TTL_SECONDS = int(os.getenv("SMS_CODE_TTL_SECONDS", "300"))
 SMS_SEND_INTERVAL_SECONDS = int(os.getenv("SMS_SEND_INTERVAL_SECONDS", "60"))
+ORDER_PAYMENT_TIMEOUT_MINUTES = int(os.getenv("ORDER_PAYMENT_TIMEOUT_MINUTES", "15"))

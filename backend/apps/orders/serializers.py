@@ -138,3 +138,89 @@ class CartSerializer(serializers.Serializer):
     merchant_id = serializers.IntegerField(allow_null=True)
     items = CartItemSerializer(many=True)
     total_amount = serializers.IntegerField()
+
+
+class OrderItemInputSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField(min_value=1)
+    sku_id = serializers.IntegerField(min_value=1, required=False, allow_null=True, default=None)
+    quantity = serializers.IntegerField(min_value=1, max_value=99)
+
+
+class ContactInputSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=40)
+    phone = serializers.CharField(max_length=20)
+    address_id = serializers.IntegerField(required=False, allow_null=True)
+    address_detail = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+
+
+class AppointmentInputSerializer(serializers.Serializer):
+    slot_id = serializers.IntegerField(min_value=1)
+    remark = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+
+
+class OrderCreateInputSerializer(serializers.Serializer):
+    merchant_id = serializers.IntegerField(min_value=1)
+    order_type = serializers.ChoiceField(choices=["EXPRESS", "PICKUP", "SERVICE"])
+    items = OrderItemInputSerializer(many=True, allow_empty=False)
+    contact = ContactInputSerializer()
+    appointment = AppointmentInputSerializer(required=False, allow_null=True)
+    remark = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+
+
+class PayInputSerializer(serializers.Serializer):
+    channel = serializers.ChoiceField(choices=["WECHAT_MINI", "WECHAT_H5"], default="WECHAT_MINI")
+
+
+class CancelInputSerializer(serializers.Serializer):
+    reason = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+
+
+class OrderItemContractSerializer(serializers.ModelSerializer):
+    price_amount = serializers.IntegerField(source="price")
+    amount = serializers.IntegerField()
+    refund_amount = serializers.IntegerField()
+
+    class Meta:
+        model = OrderItem
+        fields = ("id", "product_id", "sku_id", "title", "price_amount", "quantity", "amount", "refund_amount")
+
+
+class OrderContractSerializer(serializers.ModelSerializer):
+    merchant_name = serializers.CharField(source="merchant.name", read_only=True)
+    contact = serializers.JSONField(source="contact_json")
+    items = OrderItemContractSerializer(many=True, read_only=True)
+    verify_codes = VerifyCodeSerializer(many=True, read_only=True)
+    appointment = AppointmentSerializer(read_only=True)
+    delivery = OrderDeliverySerializer(read_only=True)
+    timeline = OrderStatusLogSerializer(source="status_logs", many=True, read_only=True)
+    commission_rate = serializers.DecimalField(max_digits=5, decimal_places=4, coerce_to_string=False)
+
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "order_no",
+            "merchant_id",
+            "merchant_name",
+            "order_type",
+            "status",
+            "fulfillment_status",
+            "product_amount",
+            "delivery_fee",
+            "payable_amount",
+            "paid_amount",
+            "refunded_amount",
+            "commission_rate",
+            "commission_amount",
+            "contact",
+            "remark",
+            "items",
+            "verify_codes",
+            "appointment",
+            "delivery",
+            "timeline",
+            "expire_at",
+            "paid_at",
+            "completed_at",
+            "created_at",
+        )

@@ -1,23 +1,36 @@
 from drf_spectacular.utils import extend_schema
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.common.api import EnvelopeAPIView, EnvelopeResponse, ok
+from apps.common.api import (
+    ApiError,
+    EnvelopeAPIView,
+    EnvelopeExceptionMixin,
+    EnvelopeResponse,
+    ok,
+)
+from apps.common.utils import payload_hash
+from apps.payments.services import create_payment
 
 from .cart_services import add_cart_item, delete_cart_item, serialize_cart, update_cart_item
 from .models import Order
+from .order_services import cancel_order, create_order
 from .serializers import (
+    CancelInputSerializer,
     CartItemInputSerializer,
     CartItemPatchSerializer,
     CartSerializer,
+    OrderContractSerializer,
+    OrderCreateInputSerializer,
     OrderDetailSerializer,
     OrderListSerializer,
+    PayInputSerializer,
 )
 
 
-class MyOrderViewSet(viewsets.ReadOnlyModelViewSet):
-    """当前登录用户的订单（列表 / 详情）。商户端与平台端后续按角色扩展。"""
+class MyOrderViewSet(EnvelopeExceptionMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    """当前登录用户的订单（列表 / 创建 / 详情）。商户端与平台端后续按角色扩展。"""
 
     permission_classes = [IsAuthenticated]
     queryset = Order.objects.none()
@@ -39,6 +52,65 @@ class MyOrderViewSet(viewsets.ReadOnlyModelViewSet):
 
     filterset_fields = ("status", "merchant", "order_type")
     search_fields = ("order_no",)
+
+    @extend_schema(tags=["order"], request=OrderCreateInputSerializer, responses=EnvelopeResponse)
+    def create(self, request):
+        idempotency_key = request.headers.get("Idempotency-Key", "").strip()
+        if not idempotency_key:
+            raise ApiError("VALIDATION_ERROR", "缺少 Idempotency-Key", 422)
+        serializer = OrderCreateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payload = dict(serializer.validated_data)
+        order, created = create_order(
+            request.user,
+            idempotency_key=idempotency_key,
+            request_hash=payload_hash(payload),
+            **payload,
+        )
+        return ok(
+            request,
+            OrderContractSerializer(order).data,
+            status_code=201 if created else 200,
+        )
+
+
+@extend_schema(tags=["order"], responses=EnvelopeResponse)
+class OrderPayView(EnvelopeAPIView):
+    """发起支付（Mock 微信统一下单）。"""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = PayInputSerializer
+
+    def post(self, request, pk):
+        idempotency_key = request.headers.get("Idempotency-Key", "").strip()
+        if not idempotency_key:
+            raise ApiError("VALIDATION_ERROR", "缺少 Idempotency-Key", 422)
+        serializer = PayInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payment, pay_params = create_payment(request.user, pk, serializer.validated_data["channel"], idempotency_key)
+        return ok(
+            request,
+            {
+                "payment_no": payment.payment_no,
+                "prepay_id": payment.prepay_id,
+                "pay_params": pay_params,
+                "expire_at": payment.expire_at.isoformat() if payment.expire_at else None,
+            },
+        )
+
+
+@extend_schema(tags=["order"], responses=EnvelopeResponse)
+class OrderCancelView(EnvelopeAPIView):
+    """取消待支付订单，释放库存与预约时段。"""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = CancelInputSerializer
+
+    def post(self, request, pk):
+        serializer = CancelInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        order = cancel_order(request.user, pk, serializer.validated_data.get("reason", ""))
+        return ok(request, OrderContractSerializer(order).data)
 
 
 @extend_schema(tags=["cart"], responses=EnvelopeResponse)

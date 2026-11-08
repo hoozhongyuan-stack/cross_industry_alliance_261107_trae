@@ -45,7 +45,16 @@
 | `SETTLEMENT_NOT_DUE` | 409 | 结算项未到 `due_at` | 结算服务 |
 | `IDEMPOTENCY_CONFLICT` | 409 | 幂等键复用但请求体不一致 | 幂等中间件 |
 | `PAY_AMOUNT_MISMATCH` | 409 | 回调金额与支付单不一致 | 支付回调 |
+| `PAYMENT_NOT_FOUND` | 404 | 支付单不存在 | 支付回调 |
+| `PAYMENT_NOT_SUCCESS` | 400 | 支付状态不是 SUCCESS | 支付回调 |
+| `PAYMENT_TRANSACTION_CONFLICT` | 409 | 交易号与已支付记录不一致 | 支付回调 |
+| `WECHAT_PAY_NOT_CONFIGURED` | 503 | 真实微信支付未接入 | 支付适配层 |
 | `PRODUCT_NOT_AVAILABLE` | 409 | 商品不存在或已下架 | 购物车/下单 |
+| `MERCHANT_NOT_AVAILABLE` | 409 | 商户不存在或未营业 | 下单 |
+| `MERCHANT_MISMATCH` | 409 | 商品不属于订单商户 | 下单 |
+| `DELIVERY_TYPE_NOT_SUPPORTED` | 409 | 订单类型与商品类型不匹配 | 下单 |
+| `APPOINTMENT_REQUIRED` | 409 | 服务商品未选择预约时段 | 下单 |
+| `SLOT_NOT_AVAILABLE` | 409 | 预约时段不存在或不可用 | 下单 |
 | `SKU_NOT_FOUND` | 409 | 规格不存在或不属于商品 | 购物车/下单 |
 | `CROSS_STORE_CART` | 409 | 跨店购物车 | 购物车 |
 | `ACCOUNT_UNION_CONFLICT` | 409 | 手机号账号已绑定其他微信身份 | 短信登录 |

@@ -54,7 +54,7 @@ def error(request, code: str, message: str, status_code: int, details=None) -> R
     return Response(payload, status=status_code)
 
 
-class EnvelopeAPIView(APIView):
+class EnvelopeExceptionMixin:
     """把 DRF 异常转换为 {code, message, trace_id, details}。"""
 
     def handle_exception(self, exc):
@@ -74,3 +74,7 @@ class EnvelopeAPIView(APIView):
         if isinstance(exc, APIException):
             return error(request, exc.default_code.upper(), str(exc.detail), exc.status_code)
         return super().handle_exception(exc)
+
+
+class EnvelopeAPIView(EnvelopeExceptionMixin, APIView):
+    """使用统一响应包裹的 APIView。"""

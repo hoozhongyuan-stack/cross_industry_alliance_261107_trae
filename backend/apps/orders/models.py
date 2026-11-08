@@ -68,6 +68,8 @@ class Order(TimeStampedModel):
     contact_json = models.JSONField("联系人快照", default=dict, blank=True)
     remark = models.CharField("用户备注", max_length=200, blank=True, default="")
     cancel_reason = models.CharField("取消原因", max_length=200, blank=True, default="")
+    idempotency_key = models.CharField("创建幂等键", max_length=64, unique=True, null=True, blank=True)
+    idempotency_hash = models.CharField("请求体哈希", max_length=64, blank=True, default="")
     expire_at = models.DateTimeField("支付超时时间", null=True, blank=True)
     paid_at = models.DateTimeField("支付时间", null=True, blank=True)
     accepted_at = models.DateTimeField("接单时间", null=True, blank=True)

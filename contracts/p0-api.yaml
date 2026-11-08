@@ -1278,7 +1278,7 @@ paths:
       tags: [order]
       operationId: createOrder
       summary: 创建订单（服务端定价，预占库存/时段）
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -1350,7 +1350,7 @@ paths:
       tags: [order]
       operationId: payOrder
       summary: 发起微信支付（返回 prepay_id，15 分钟有效）
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       parameters:
         - name: id
@@ -1378,8 +1378,9 @@ paths:
     post:
       tags: [order]
       operationId: cancelOrder
-      summary: 取消待支付/待接单订单（触发退款或关闭）
-      x-status: planned
+      summary: 取消待支付订单（关闭并释放库存/时段）
+      description: M1 仅支持待支付订单；待接单取消退款在 M2 实现。
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       parameters:
         - name: id
@@ -2166,8 +2167,8 @@ paths:
       tags: [callback]
       operationId: wechatPayCallback
       summary: 微信支付回调（验签、金额校验、幂等记账）
-      description: 处理失败返回非 200，微信会重试；必须承受重复回调。
-      x-status: planned
+      description: M1 仅支持 Mock 回调；处理失败返回非 200，微信会重试；必须承受重复回调。
+      x-status: implemented
       security: []
       requestBody:
         required: true
