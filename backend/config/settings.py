@@ -134,7 +134,7 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
-    "SORT_OPERATIONS": False,
+    "SORT_OPERATIONS": True,
     "ENUM_NAME_OVERRIDES": {
         "AppUserStatusEnum": "apps.accounts.models.AppUser.Status",
         "MerchantStatusEnum": "apps.merchants.models.Merchant.Status",

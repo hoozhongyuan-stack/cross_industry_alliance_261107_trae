@@ -4,11 +4,180 @@ info:
   version: 0.1.0
   description: 消费者 / 商户 / 平台三端共用领域服务。金额单位为「分」，时间为 Asia/Shanghai。
 paths:
-  /api/v1/health/:
-    get:
-      operationId: v1_health_retrieve
+  /api/v1/accounts/auth/refresh/:
+    post:
+      operationId: v1_accounts_auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
       tags:
       - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/accounts/auth/token/:
+    post:
+      operationId: v1_accounts_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/accounts/me/:
+    get:
+      operationId: v1_accounts_me_retrieve
+      description: 当前登录用户与所属商户身份。
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/v1/accounts/staff/users/:
+    get:
+      operationId: v1_accounts_staff_users_retrieve
+      description: 仅平台后台可用：用户列表（按手机号 / 昵称检索）。
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUser'
+          description: ''
+  /api/v1/addresses/:
+    get:
+      operationId: v1_addresses_retrieve
+      description: 收货地址列表与新增。
+      tags:
+      - consumer
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+    post:
+      operationId: v1_addresses_create
+      description: 收货地址列表与新增。
+      tags:
+      - consumer
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/addresses/{id}/:
+    patch:
+      operationId: v1_addresses_partial_update
+      description: 收货地址修改与删除。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - consumer
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+    delete:
+      operationId: v1_addresses_destroy
+      description: 收货地址修改与删除。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - consumer
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/h5/sms/:
+    post:
+      operationId: v1_auth_h5_sms_create
+      description: H5 手机号验证码登录。
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SmsLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SmsLoginRequest'
+        required: true
       security:
       - {}
       responses:
@@ -16,8 +185,182 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Health'
+                $ref: '#/components/schemas/EnvelopeResponse'
           description: ''
+  /api/v1/auth/sms/send/:
+    post:
+      operationId: v1_auth_sms_send_create
+      description: 发送短信验证码；Mock 模式返回 debug_code。
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsSendRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SmsSendRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SmsSendRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/auth/wechat/login/:
+    post:
+      operationId: v1_auth_wechat_login_create
+      description: 小程序登录：Mock 阶段 code 换 openid/unionid。
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/callback/wechat/pay/:
+    post:
+      operationId: v1_callback_wechat_pay_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallbackPayloadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CallbackPayloadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CallbackPayloadRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallbackAck'
+          description: ''
+  /api/v1/cart/:
+    get:
+      operationId: v1_cart_retrieve
+      description: 当前用户购物车（单店）。
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/cart/items/:
+    post:
+      operationId: v1_cart_items_create
+      description: 加入购物车；同商品同规格累加。
+      tags:
+      - cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/cart/items/{id}/:
+    patch:
+      operationId: v1_cart_items_partial_update
+      description: 修改数量/选中状态或移出购物车。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+    delete:
+      operationId: v1_cart_items_destroy
+      description: 修改数量/选中状态或移出购物车。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/categories/:
     get:
       operationId: v1_categories_list
@@ -68,48 +411,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Category'
           description: ''
-  /api/v1/products/:
+  /api/v1/health/:
     get:
-      operationId: v1_products_list
-      description: 消费者端商品浏览：只暴露在售商品。
-      parameters:
-      - in: query
-        name: category
-        schema:
-          type: integer
-      - in: query
-        name: merchant
-        schema:
-          type: integer
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
-        schema:
-          type: string
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - name: search
-        required: false
-        in: query
-        description: A search term.
-        schema:
-          type: string
-      - in: query
-        name: type
-        schema:
-          type: string
-          title: 商品类型
-          enum:
-          - PHYSICAL
-          - SERVICE
-        description: |-
-          * `PHYSICAL` - 实物商品
-          * `SERVICE` - 到店服务
+      operationId: v1_health_retrieve
       tags:
       - v1
       security:
@@ -119,29 +423,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedProductListList'
-          description: ''
-  /api/v1/products/{id}/:
-    get:
-      operationId: v1_products_retrieve
-      description: 消费者端商品浏览：只暴露在售商品。
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this 商品/服务.
-        required: true
-      tags:
-      - v1
-      security:
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/Health'
           description: ''
   /api/v1/merchants/:
     get:
@@ -338,39 +620,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/OrderDetail'
           description: ''
-  /api/v1/orders/{id}/pay/:
-    post:
-      operationId: v1_orders_pay_create
-      description: 发起支付（Mock 微信统一下单）。
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - order
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PayInputRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PayInputRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PayInputRequest'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
   /api/v1/orders/{id}/cancel/:
     post:
       operationId: v1_orders_cancel_create
@@ -404,54 +653,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/EnvelopeResponse'
           description: ''
-  /api/v1/cart/:
-    get:
-      operationId: v1_cart_retrieve
-      description: 当前用户购物车（单店）。
-      tags:
-      - cart
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
-  /api/v1/cart/items/:
+  /api/v1/orders/{id}/pay/:
     post:
-      operationId: v1_cart_items_create
-      description: 加入购物车；同商品同规格累加。
-      tags:
-      - cart
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CartItemInputRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/CartItemInputRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/CartItemInputRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
-  /api/v1/cart/items/{id}/:
-    patch:
-      operationId: v1_cart_items_partial_update
-      description: 修改数量/选中状态或移出购物车。
+      operationId: v1_orders_pay_create
+      description: 发起支付（Mock 微信统一下单）。
       parameters:
       - in: path
         name: id
@@ -459,18 +664,18 @@ paths:
           type: integer
         required: true
       tags:
-      - cart
+      - order
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+              $ref: '#/components/schemas/PayInputRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+              $ref: '#/components/schemas/PayInputRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+              $ref: '#/components/schemas/PayInputRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -481,41 +686,72 @@ paths:
               schema:
                 $ref: '#/components/schemas/EnvelopeResponse'
           description: ''
-    delete:
-      operationId: v1_cart_items_destroy
-      description: 修改数量/选中状态或移出购物车。
+  /api/v1/products/:
+    get:
+      operationId: v1_products_list
+      description: 消费者端商品浏览：只暴露在售商品。
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - in: query
+        name: merchant
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: type
+        schema:
+          type: string
+          title: 商品类型
+          enum:
+          - PHYSICAL
+          - SERVICE
+        description: |-
+          * `PHYSICAL` - 实物商品
+          * `SERVICE` - 到店服务
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+  /api/v1/products/{id}/:
+    get:
+      operationId: v1_products_retrieve
+      description: 消费者端商品浏览：只暴露在售商品。
       parameters:
       - in: path
         name: id
         schema:
           type: integer
+        description: A unique integer value identifying this 商品/服务.
         required: true
       tags:
-      - cart
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/auth/wechat/login/:
-    post:
-      operationId: v1_auth_wechat_login_create
-      description: 小程序登录：Mock 阶段 code 换 openid/unionid。
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WechatLoginRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/WechatLoginRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/WechatLoginRequest'
-        required: true
+      - v1
       security:
       - {}
       responses:
@@ -523,243 +759,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
-  /api/v1/auth/h5/sms/:
-    post:
-      operationId: v1_auth_h5_sms_create
-      description: H5 手机号验证码登录。
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SmsLoginRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SmsLoginRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SmsLoginRequest'
-        required: true
-      security:
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
-  /api/v1/auth/sms/send/:
-    post:
-      operationId: v1_auth_sms_send_create
-      description: 发送短信验证码；Mock 模式返回 debug_code。
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SmsSendRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SmsSendRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SmsSendRequest'
-        required: true
-      security:
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
-  /api/v1/addresses/:
-    get:
-      operationId: v1_addresses_retrieve
-      description: 收货地址列表与新增。
-      tags:
-      - consumer
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
-    post:
-      operationId: v1_addresses_create
-      description: 收货地址列表与新增。
-      tags:
-      - consumer
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
-  /api/v1/addresses/{id}/:
-    patch:
-      operationId: v1_addresses_partial_update
-      description: 收货地址修改与删除。
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - consumer
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EnvelopeResponse'
-          description: ''
-    delete:
-      operationId: v1_addresses_destroy
-      description: 收货地址修改与删除。
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - consumer
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/callback/wechat/pay/:
-    post:
-      operationId: v1_callback_wechat_pay_create
-      tags:
-      - v1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CallbackPayloadRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/CallbackPayloadRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/CallbackPayloadRequest'
-        required: true
-      security:
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CallbackAck'
-          description: ''
-  /api/v1/accounts/auth/token/:
-    post:
-      operationId: v1_accounts_auth_token_create
-      description: |-
-        Takes a set of user credentials and returns an access and refresh JSON web
-        token pair to prove the authentication of those credentials.
-      tags:
-      - v1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenObtainPair'
-          description: ''
-  /api/v1/accounts/auth/refresh/:
-    post:
-      operationId: v1_accounts_auth_refresh_create
-      description: |-
-        Takes a refresh type JSON web token and returns an access type JSON web
-        token if the refresh token is valid.
-      tags:
-      - v1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenRefresh'
-          description: ''
-  /api/v1/accounts/me/:
-    get:
-      operationId: v1_accounts_me_retrieve
-      description: 当前登录用户与所属商户身份。
-      tags:
-      - v1
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Me'
-          description: ''
-  /api/v1/accounts/staff/users/:
-    get:
-      operationId: v1_accounts_staff_users_retrieve
-      description: 仅平台后台可用：用户列表（按手机号 / 昵称检索）。
-      tags:
-      - v1
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AppUser'
+                $ref: '#/components/schemas/Product'
           description: ''
 components:
   schemas:
