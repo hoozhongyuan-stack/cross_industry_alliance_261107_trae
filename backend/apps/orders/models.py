@@ -181,3 +181,41 @@ class OrderReview(TimeStampedModel):
 
     def __str__(self):
         return f"{self.order_id}-{self.score}"
+
+
+class CartItem(TimeStampedModel):
+    """P0 单店购物车：服务端持久化，跨小程序/H5 共享。不做跨店合并。"""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cart_items", verbose_name="用户"
+    )
+    merchant = models.ForeignKey(
+        "merchants.Merchant", on_delete=models.CASCADE, related_name="cart_items", verbose_name="商户"
+    )
+    product = models.ForeignKey(
+        "catalog.Product", on_delete=models.CASCADE, related_name="cart_items", verbose_name="商品"
+    )
+    sku = models.ForeignKey(
+        "catalog.ProductSku",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cart_items",
+        verbose_name="规格",
+    )
+    quantity = models.PositiveIntegerField("数量", default=1)
+    selected = models.BooleanField("已选中", default=True)
+
+    class Meta:
+        verbose_name = "购物车项"
+        verbose_name_plural = "购物车项"
+        db_table = "cart_item"
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(fields=["user", "product", "sku"], name="uq_cart_user_product_sku"),
+            models.CheckConstraint(check=models.Q(quantity__gt=0), name="ck_cart_quantity_positive"),
+        ]
+        indexes = [models.Index(fields=["user", "merchant"], name="ix_cart_user_merchant")]
+
+    def __str__(self):
+        return f"{self.user_id}-{self.product_id}x{self.quantity}"

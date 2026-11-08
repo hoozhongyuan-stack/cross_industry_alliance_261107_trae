@@ -8,6 +8,7 @@
 
 from django.db import models
 
+from apps.common.fields import EncryptedJSONField
 from apps.common.models import TimeStampedModel
 from apps.common.utils import generate_no
 
@@ -201,7 +202,7 @@ class WithdrawalOrder(TimeStampedModel):
     amount = models.BigIntegerField("申请金额（分）")
     fee = models.BigIntegerField("手续费（分）", default=0)
     net_amount = models.BigIntegerField("实付金额（分）")
-    bank_snapshot_json = models.JSONField("收款银行快照（脱敏）", default=dict, blank=True)
+    bank_snapshot_json = EncryptedJSONField("收款银行快照（加密存储）", default=dict, blank=True)
     status = models.CharField("状态", max_length=16, choices=Status.choices, default=Status.REQUESTED, db_index=True)
     requested_at = models.DateTimeField("申请时间", null=True, blank=True)
     reviewed_by_id = models.BigIntegerField("审核人 ID", null=True, blank=True)

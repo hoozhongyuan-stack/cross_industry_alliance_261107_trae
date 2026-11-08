@@ -4,7 +4,7 @@ from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 
 from apps.common.admin import BaseAdmin
 
-from .models import AppUser, UserIdentity
+from .models import AppUser, UserAddress, UserIdentity
 
 
 class AppUserCreationForm(UserCreationForm):
@@ -42,4 +42,12 @@ class UserIdentityAdmin(BaseAdmin):
     list_display = ("id", "user", "channel", "open_id", "union_id", "created_at")
     list_filter = ("channel",)
     search_fields = ("open_id", "union_id", "user__phone")
+    raw_id_fields = ("user",)
+
+
+@admin.register(UserAddress)
+class UserAddressAdmin(BaseAdmin):
+    list_display = ("id", "user", "receiver_name", "phone", "city", "district", "tag", "is_default")
+    list_filter = ("tag", "is_default", "city")
+    search_fields = ("user__phone",)
     raw_id_fields = ("user",)

@@ -26,7 +26,10 @@ backend/
   apps/ledger/     虚拟账户、复式记账、结算、提现
   apps/governance/ 规则版本、审核、操作日志、内容位
   apps/notifications/ 通知、Outbox
-contracts/        OpenAPI 与错误码契约
+contracts/
+  p0-api.yaml      P0 目标契约（手写，先改这里）
+  openapi.yaml     已实现接口快照（自动生成，CI diff）
+  errors.md        错误码与响应约定
 ```
 
 ## 3. 常用命令（在仓库根目录）
@@ -38,7 +41,8 @@ make test       # pytest + 覆盖率门槛
 make lint       # ruff check + format 检查
 make check      # django check + 迁移一致性
 make audit      # 资金对账：流水 vs 账户快照
-make schema     # 重新生成 OpenAPI 契约
+make contract-check  # 校验 P0 目标契约结构
+make schema     # 重新生成已实现接口的 OpenAPI
 make verify     # 以上门禁总和，提交前必跑
 ```
 
@@ -54,16 +58,17 @@ CI（GitHub Actions）执行同一套 `make verify`；本地不通过，CI 一�
 6. 一张订单只有一个结算项（`unique(order)`）；`due_at = completed_at + merchant.settlement_cycle_days`。
 7. 业务代码分层：view → serializer → service → model；view 不写业务规则，serializer 不做计算。
 8. 未确认的业务规则标 `TBD` 并写进契约或注释，禁止凭空补规则、补默认值。
-9. 密钥、商户号、证书只进 `.env`；`.env` 不入库，代码不写死。
-10. 所有表结构变更必须生成迁移并提交；禁止手改数据库结构。
+9. 密钥、商户号、证书只进 `.env` 或平台后台配置表；`.env` 不入库，代码不写死。
+10. 敏感字段（地址、联系电话、收货人、银行卡、证书）必须用 `EncryptedTextField` / `EncryptedJSONField`；加密字段不支持等值查询，登录手机号需另加盲索引。
+11. 所有表结构变更必须生成迁移并提交；禁止手改数据库结构。
 
 ## 5. 常见任务 playbook
 
 **新增一个接口**
-1. 先写 serializer 字段与权限（消费者 / 商户 / 平台）。
-2. 业务逻辑放 service；view 只做参数校验与调用。
+1. 先改 `contracts/p0-api.yaml`：路径、请求/响应、错误码、幂等要求。
+2. 再实现 serializer 与 service；view 只做参数校验与调用。
 3. 写测试：成功、越权、重复调用。
-4. `make schema` 更新契约并一起提交。
+4. `make schema` 更新已实现接口快照，两者一起提交。
 
 **新增字段**
 1. 改 model → `makemigrations` → `migrate`。
@@ -87,7 +92,7 @@ CI（GitHub Actions）执行同一套 `make verify`；本地不通过，CI 一�
 - [ ] `make verify` 全绿
 - [ ] 有迁移且 `makemigrations --check` 通过
 - [ ] 关键路径有测试；资金/状态改动覆盖成功与失败分支
-- [ ] 契约已更新（如有接口变化）
+- [ ] 契约已更新（`p0-api.yaml` + 生成的 `openapi.yaml`）
 - [ ] 错误码、日志字段（order_no / txn_no / merchant_id）可定位问题
 - [ ] 未定项标 TBD，没有伪造规则
 

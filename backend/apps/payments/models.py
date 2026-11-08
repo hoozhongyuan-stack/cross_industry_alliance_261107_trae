@@ -1,8 +1,13 @@
-"""支付单与退款单。微信支付参数通过环境变量注入，P0 不做真实渠道联调。"""
+"""支付单、退款单与平台支付配置。
+
+微信商户号、APIv3 密钥与证书由平台 PC 后台维护，密钥字段加密存储（T2）；
+P0 只做内部记账，不做真实渠道联调。
+"""
 
 from django.conf import settings
 from django.db import models
 
+from apps.common.fields import EncryptedTextField
 from apps.common.models import TimeStampedModel
 from apps.common.utils import generate_no
 
@@ -102,3 +107,31 @@ class RefundOrder(TimeStampedModel):
 
     def __str__(self):
         return self.refund_no
+
+
+class PlatformPaymentConfig(TimeStampedModel):
+    """平台支付渠道配置：由 PC 后台维护，密钥与证书加密存储（T2）。
+
+    每个渠道仅一条启用配置；历史变更通过 operation_log 审计。
+    """
+
+    channel = models.CharField("支付渠道", max_length=16, choices=PaymentOrder.Channel.choices, unique=True)
+    merchant_no = models.CharField("商户号", max_length=32)
+    app_id = models.CharField("应用 ID", max_length=32, blank=True, default="")
+    api_v3_key = EncryptedTextField("APIv3 密钥")
+    cert_serial_no = models.CharField("证书序列号", max_length=64, blank=True, default="")
+    private_key = EncryptedTextField("商户私钥 PEM")
+    platform_cert = EncryptedTextField("平台证书 PEM")
+    notify_url = models.URLField("支付回调地址", blank=True, default="")
+    enabled = models.BooleanField("启用", default=False)
+    updated_by_id = models.BigIntegerField("最后修改人 ID", null=True, blank=True)
+    updated_by_name = models.CharField("最后修改人", max_length=60, blank=True, default="")
+
+    class Meta:
+        verbose_name = "平台支付配置"
+        verbose_name_plural = "平台支付配置"
+        db_table = "platform_payment_config"
+        ordering = ("channel",)
+
+    def __str__(self):
+        return f"{self.get_channel_display()}({self.merchant_no})"

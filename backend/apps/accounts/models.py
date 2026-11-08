@@ -7,6 +7,7 @@ AppUser 同时是 Django 的 AUTH_USER_MODEL：平台后台用手机号 + 密码
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
+from apps.common.fields import EncryptedTextField
 from apps.common.models import TimeStampedModel
 
 
@@ -89,3 +90,34 @@ class UserIdentity(TimeStampedModel):
 
     def __str__(self):
         return f"{self.user_id}@{self.channel}"
+
+
+class UserAddress(TimeStampedModel):
+    """收货地址簿。收货人、电话、详细地址加密存储（T9）。"""
+
+    class Tag(models.TextChoices):
+        HOME = "HOME", "家"
+        COMPANY = "COMPANY", "公司"
+        OTHER = "OTHER", "其他"
+
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="addresses", verbose_name="用户")
+    receiver_name = EncryptedTextField("收货人")
+    phone = EncryptedTextField("收货电话")
+    province = models.CharField("省", max_length=32, blank=True, default="")
+    city = models.CharField("市", max_length=32, blank=True, default="")
+    district = models.CharField("区县", max_length=32, blank=True, default="")
+    detail = EncryptedTextField("详细地址")
+    lng = models.DecimalField("经度", max_digits=9, decimal_places=6, null=True, blank=True)
+    lat = models.DecimalField("纬度", max_digits=9, decimal_places=6, null=True, blank=True)
+    tag = models.CharField("标签", max_length=16, choices=Tag.choices, default=Tag.OTHER)
+    is_default = models.BooleanField("默认地址", default=False)
+
+    class Meta:
+        verbose_name = "收货地址"
+        verbose_name_plural = "收货地址"
+        db_table = "user_address"
+        ordering = ("-is_default", "-created_at")
+        indexes = [models.Index(fields=["user", "is_default"], name="ix_user_address_default")]
+
+    def __str__(self):
+        return f"{self.user_id}-{self.id}"

@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apps.common.admin import BaseAdmin
 
-from .models import Order, OrderItem, OrderReview, OrderStatusLog
+from .models import CartItem, Order, OrderItem, OrderReview, OrderStatusLog
 
 
 class OrderItemInline(admin.TabularInline):
@@ -60,3 +60,11 @@ class OrderReviewAdmin(BaseAdmin):
     list_display = ("id", "order", "user", "merchant", "score", "status", "created_at")
     list_filter = ("status", "score")
     raw_id_fields = ("order", "user", "merchant")
+
+
+@admin.register(CartItem)
+class CartItemAdmin(BaseAdmin):
+    list_display = ("id", "user", "merchant", "product", "sku", "quantity", "selected", "created_at")
+    list_filter = ("selected", "merchant")
+    search_fields = ("user__phone", "product__title")
+    raw_id_fields = ("user", "merchant", "product", "sku")

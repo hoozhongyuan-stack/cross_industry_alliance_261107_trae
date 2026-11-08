@@ -1,0 +1,2206 @@
+openapi: 3.0.3
+info:
+  title: 异业联盟商城 P0 接口契约
+  version: 1.0.0
+  description: |
+    目标契约（contract-first），覆盖消费者、商户、平台三端与微信回调。
+    当前实现见 contracts/openapi.yaml；本文件是开发与联调依据，未实现接口标 x-status: planned。
+
+    通用约定：
+    - 金额一律整数「分」，字段以 _amount 结尾。
+    - 时间 ISO 8601，带时区（+08:00）。
+    - 写接口重复调用必须幂等；创建订单/支付/退款/提现/核销携带 Idempotency-Key。
+    - 响应包裹 { code, message, trace_id, data }；业务失败用 code 区分。
+    - 分页参数 page / page_size，返回 total / has_more。
+    - x-status: implemented 表示接口已存在，但部分响应仍是旧格式（DRF detail），按本契约逐步迁移；planned 表示待实现。
+servers:
+  - url: http://127.0.0.1:8000
+    description: 本地开发
+tags:
+  - name: auth
+    description: 登录与身份
+  - name: consumer
+    description: 消费者端
+  - name: cart
+    description: 单店购物车
+  - name: order
+    description: 订单
+  - name: aftersale
+    description: 售后
+  - name: merchant
+    description: 商户端
+  - name: admin
+    description: 平台后台
+  - name: callback
+    description: 微信回调
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: 业务幂等键；同键不同请求体返回 IDEMPOTENCY_CONFLICT
+      schema: { type: string, maxLength: 64 }
+  responses:
+    Unauthorized:
+      description: 未登录或 Token 失效
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Forbidden:
+      description: 无权限或跨商户访问
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Conflict:
+      description: 状态冲突或幂等冲突
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    ValidationError:
+      description: 参数校验失败
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  schemas:
+    ErrorEnvelope:
+      type: object
+      required: [code, message, trace_id]
+      properties:
+        code: { type: string, example: ORDER_STATE_CONFLICT }
+        message: { type: string }
+        trace_id: { type: string }
+        details: { type: object, additionalProperties: true }
+    Envelope:
+      type: object
+      required: [code, message, trace_id]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        trace_id: { type: string }
+    Page:
+      type: object
+      required: [page, page_size, total, has_more]
+      properties:
+        page: { type: integer }
+        page_size: { type: integer }
+        total: { type: integer }
+        has_more: { type: boolean }
+    TokenPair:
+      type: object
+      required: [access, refresh]
+      properties:
+        access: { type: string }
+        refresh: { type: string }
+        expires_in: { type: integer, description: access 有效期（秒） }
+    TokenEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/TokenPair' }
+    WechatLoginInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, description: wx.login 的 code }
+        channel: { type: string, enum: [WECHAT_MINI, WECHAT_H5], default: WECHAT_MINI }
+    SmsLoginInput:
+      type: object
+      required: [phone, sms_code]
+      properties:
+        phone: { type: string, example: '13800138000' }
+        sms_code: { type: string, minLength: 4, maxLength: 8 }
+        union_id: { type: string, description: 微信内 H5 授权后回传 }
+    SmsSendInput:
+      type: object
+      required: [phone, scene]
+      properties:
+        phone: { type: string }
+        scene: { type: string, enum: [LOGIN, ORDER_NOTICE] }
+    Me:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        phone: { type: string }
+        nickname: { type: string }
+        avatar_url: { type: string }
+        is_staff: { type: boolean }
+        merchant_roles:
+          type: array
+          items:
+            type: object
+            properties:
+              merchant_id: { type: integer, format: int64 }
+              merchant_name: { type: string }
+              role: { type: string, enum: [OWNER, MANAGER, CLERK] }
+    MeEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/Me' }
+    AddressInput:
+      type: object
+      required: [receiver_name, phone, city, district, detail]
+      properties:
+        receiver_name: { type: string, maxLength: 40 }
+        phone: { type: string, maxLength: 20 }
+        province: { type: string }
+        city: { type: string }
+        district: { type: string }
+        detail: { type: string, maxLength: 120 }
+        lng: { type: number, format: double }
+        lat: { type: number, format: double }
+        tag: { type: string, enum: [HOME, COMPANY, OTHER] }
+        is_default: { type: boolean }
+    Address:
+      allOf:
+        - $ref: '#/components/schemas/AddressInput'
+        - type: object
+          properties:
+            id: { type: integer, format: int64 }
+            created_at: { type: string, format: date-time }
+    AddressEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/Address' }
+    AddressListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Address' }
+    Store:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        merchant_no: { type: string }
+        name: { type: string }
+        logo_url: { type: string }
+        category_id: { type: integer, format: int64 }
+        category_name: { type: string }
+        address: { type: string }
+        city: { type: string }
+        district: { type: string }
+        lng: { type: number, format: double }
+        lat: { type: number, format: double }
+        distance_meters: { type: integer, description: 仅附近接口返回 }
+        business_hours: { type: object, additionalProperties: true }
+        status: { type: string, enum: [PENDING, ACTIVE, REJECTED, SUSPENDED, CLOSED] }
+    StoreEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/Store' }
+    StorePageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/Store' }
+                page: { $ref: '#/components/schemas/Page' }
+    Sku:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        sku_code: { type: string }
+        spec: { type: object, additionalProperties: true }
+        price_amount: { type: integer, description: 售价（分） }
+        available_stock: { type: integer }
+    ServiceSlot:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        slot_date: { type: string, format: date }
+        start_time: { type: string, example: '10:00' }
+        end_time: { type: string, example: '10:30' }
+        capacity: { type: integer }
+        remaining: { type: integer }
+    Product:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        merchant_id: { type: integer, format: int64 }
+        merchant_name: { type: string }
+        category_id: { type: integer, format: int64 }
+        type: { type: string, enum: [PHYSICAL, SERVICE] }
+        title: { type: string }
+        subtitle: { type: string }
+        cover_url: { type: string }
+        images:
+          type: array
+          items: { type: string }
+        description: { type: string }
+        price_amount: { type: integer }
+        original_price_amount: { type: integer }
+        sold_count: { type: integer }
+        verify_days: { type: integer }
+        appointment_required: { type: boolean }
+        delivery_types:
+          type: array
+          items: { type: string, enum: [EXPRESS, PICKUP, VERIFY, APPOINTMENT] }
+        skus:
+          type: array
+          items: { $ref: '#/components/schemas/Sku' }
+        slots:
+          type: array
+          items: { $ref: '#/components/schemas/ServiceSlot' }
+        refund_policy: { type: string, description: P0 展示文本，具体规则 TBD }
+    ProductEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/Product' }
+    ProductPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/Product' }
+                page: { $ref: '#/components/schemas/Page' }
+    Category:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        parent_id: { type: integer, format: int64, nullable: true }
+        name: { type: string }
+        icon_url: { type: string }
+        level: { type: integer }
+        sort: { type: integer }
+    CategoryListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Category' }
+    CartItemInput:
+      type: object
+      required: [product_id, quantity]
+      properties:
+        product_id: { type: integer, format: int64 }
+        sku_id: { type: integer, format: int64, nullable: true }
+        quantity: { type: integer, minimum: 1, maximum: 99 }
+    CartItemPatch:
+      type: object
+      properties:
+        quantity: { type: integer, minimum: 1, maximum: 99 }
+        selected: { type: boolean }
+    CartItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        merchant_id: { type: integer, format: int64 }
+        product_id: { type: integer, format: int64 }
+        sku_id: { type: integer, format: int64, nullable: true }
+        title: { type: string }
+        cover_url: { type: string }
+        spec: { type: object, additionalProperties: true }
+        price_amount: { type: integer }
+        quantity: { type: integer }
+        selected: { type: boolean }
+        available_stock: { type: integer }
+    CartEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                merchant_id: { type: integer, format: int64 }
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/CartItem' }
+                total_amount: { type: integer, description: 已选中项合计（分） }
+    OrderItemInput:
+      type: object
+      required: [product_id, quantity]
+      properties:
+        product_id: { type: integer, format: int64 }
+        sku_id: { type: integer, format: int64, nullable: true }
+        quantity: { type: integer, minimum: 1, maximum: 99 }
+    Contact:
+      type: object
+      required: [name, phone]
+      properties:
+        name: { type: string }
+        phone: { type: string }
+        address_id: { type: integer, format: int64, nullable: true }
+        address_detail: { type: string }
+    AppointmentInput:
+      type: object
+      required: [slot_id]
+      properties:
+        slot_id: { type: integer, format: int64 }
+        remark: { type: string }
+    OrderCreateInput:
+      type: object
+      required: [merchant_id, order_type, items, contact]
+      properties:
+        merchant_id: { type: integer, format: int64 }
+        order_type: { type: string, enum: [EXPRESS, PICKUP, SERVICE] }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/OrderItemInput' }
+        contact: { $ref: '#/components/schemas/Contact' }
+        appointment: { $ref: '#/components/schemas/AppointmentInput' }
+        remark: { type: string, maxLength: 200 }
+    OrderItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        product_id: { type: integer, format: int64 }
+        sku_id: { type: integer, format: int64, nullable: true }
+        title: { type: string }
+        price_amount: { type: integer }
+        quantity: { type: integer }
+        amount: { type: integer }
+        refund_amount: { type: integer }
+    Order:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        order_no: { type: string }
+        merchant_id: { type: integer, format: int64 }
+        merchant_name: { type: string }
+        order_type: { type: string, enum: [EXPRESS, PICKUP, SERVICE] }
+        status:
+          type: string
+          enum: [PENDING_PAYMENT, PENDING_ACCEPT, PENDING_FULFILL, FULFILLING, COMPLETED, AFTER_SALE, REFUNDING, REFUNDED, CLOSED]
+        fulfillment_status:
+          type: string
+          enum: [NOT_STARTED, APPOINTMENT_CONFIRMED, SHIPPED, PICKUP_READY, VERIFY_READY, DONE]
+        product_amount: { type: integer }
+        delivery_fee: { type: integer }
+        payable_amount: { type: integer }
+        paid_amount: { type: integer }
+        refunded_amount: { type: integer }
+        commission_rate: { type: number, format: double, example: 0.05 }
+        commission_amount: { type: integer }
+        contact: { $ref: '#/components/schemas/Contact' }
+        remark: { type: string }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/OrderItem' }
+        verify_codes:
+          type: array
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              type: { type: string, enum: [VERIFY, PICKUP] }
+              status: { type: string, enum: [ACTIVE, USED, EXPIRED, INVALID] }
+              valid_to: { type: string, format: date-time }
+        appointment:
+          type: object
+          properties:
+            slot_date: { type: string, format: date }
+            start_time: { type: string }
+            status: { type: string, enum: [PENDING_CONFIRM, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW] }
+        delivery:
+          type: object
+          properties:
+            type: { type: string, enum: [EXPRESS, PICKUP] }
+            logistics_company: { type: string }
+            logistics_no: { type: string }
+            shipped_at: { type: string, format: date-time }
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              from_status: { type: string }
+              to_status: { type: string }
+              event: { type: string }
+              created_at: { type: string, format: date-time }
+        expire_at: { type: string, format: date-time }
+        paid_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+    OrderEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/Order' }
+    OrderPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/Order' }
+                page: { $ref: '#/components/schemas/Page' }
+    PayInput:
+      type: object
+      properties:
+        channel: { type: string, enum: [WECHAT_MINI, WECHAT_H5], default: WECHAT_MINI }
+    PayResult:
+      type: object
+      properties:
+        payment_no: { type: string }
+        prepay_id: { type: string }
+        pay_params: { type: object, additionalProperties: true, description: 小程序 wx.requestPayment 参数 }
+        expire_at: { type: string, format: date-time }
+    PayEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/PayResult' }
+    CancelInput:
+      type: object
+      properties:
+        reason: { type: string, maxLength: 200 }
+    ReviewInput:
+      type: object
+      required: [score]
+      properties:
+        score: { type: integer, minimum: 1, maximum: 5 }
+        content: { type: string, maxLength: 500 }
+        images:
+          type: array
+          maxItems: 6
+          items: { type: string, format: uri }
+    AfterSaleInput:
+      type: object
+      required: [order_id, type, reason_code, request_amount]
+      properties:
+        order_id: { type: integer, format: int64 }
+        order_item_id: { type: integer, format: int64, nullable: true }
+        type: { type: string, enum: [REFUND_ONLY, RETURN_REFUND, SERVICE_ISSUE] }
+        reason_code: { type: string }
+        description: { type: string }
+        evidence:
+          type: array
+          items: { type: string, format: uri }
+        request_amount: { type: integer, description: 申请金额（分） }
+    AfterSale:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        after_sale_no: { type: string }
+        order_id: { type: integer, format: int64 }
+        type: { type: string }
+        status: { type: string, enum: [APPLIED, MERCHANT_PROCESSING, MERCHANT_AGREED, MERCHANT_REJECTED, ARBITRATING, RESOLVED, REFUNDING, COMPLETED, CANCELLED] }
+        request_amount: { type: integer }
+        approved_amount: { type: integer }
+        merchant_decision: { type: string, enum: [PENDING, AGREED, REJECTED] }
+        merchant_reason: { type: string }
+        deadline_at: { type: string, format: date-time }
+        arbitration:
+          type: object
+          nullable: true
+          properties:
+            case_no: { type: string }
+            status: { type: string }
+            liability: { type: string, enum: [MERCHANT, USER, PLATFORM, SHARED, UNDECIDED] }
+            ruling: { type: string }
+        refunds:
+          type: array
+          items:
+            type: object
+            properties:
+              refund_no: { type: string }
+              amount: { type: integer }
+              status: { type: string, enum: [REQUESTED, PROCESSING, SUCCESS, FAILED] }
+        created_at: { type: string, format: date-time }
+        closed_at: { type: string, format: date-time }
+    AfterSaleEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/AfterSale' }
+    MerchantApplyInput:
+      type: object
+      required: [name, category_id, contact_phone, address]
+      properties:
+        name: { type: string }
+        category_id: { type: integer, format: int64 }
+        contact_phone: { type: string }
+        address: { type: string }
+        lng: { type: number, format: double }
+        lat: { type: number, format: double }
+        qualifications:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [BUSINESS_LICENSE, FOOD_PERMIT, HEALTH_PERMIT, OTHER] }
+              file_url: { type: string, format: uri }
+              expire_at: { type: string, format: date }
+    MerchantProfile:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        merchant_no: { type: string }
+        name: { type: string }
+        status: { type: string }
+        commission_rate: { type: number, description: 生效佣金率（商户覆盖或类目默认） }
+        settlement_cycle_days: { type: integer }
+        balances:
+          type: object
+          properties:
+            pending_amount: { type: integer }
+            frozen_amount: { type: integer }
+            available_amount: { type: integer }
+            withdrawing_amount: { type: integer }
+    MerchantProfileEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/MerchantProfile' }
+    ProductInput:
+      type: object
+      required: [category_id, type, title, price_amount, delivery_types]
+      properties:
+        category_id: { type: integer, format: int64 }
+        type: { type: string, enum: [PHYSICAL, SERVICE] }
+        title: { type: string }
+        subtitle: { type: string }
+        cover_url: { type: string, format: uri }
+        images:
+          type: array
+          items: { type: string, format: uri }
+        description: { type: string }
+        price_amount: { type: integer, minimum: 1 }
+        original_price_amount: { type: integer }
+        verify_days: { type: integer, minimum: 1 }
+        appointment_required: { type: boolean }
+        delivery_types:
+          type: array
+          items: { type: string, enum: [EXPRESS, PICKUP, VERIFY, APPOINTMENT] }
+        skus:
+          type: array
+          items:
+            type: object
+            properties:
+              sku_code: { type: string }
+              spec: { type: object, additionalProperties: true }
+              price_amount: { type: integer }
+              stock: { type: integer }
+        version: { type: integer, description: 编辑时必填，乐观锁 }
+    RejectInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, maxLength: 200 }
+    ShipInput:
+      type: object
+      properties:
+        logistics_company: { type: string }
+        logistics_no: { type: string }
+    VerifyInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string }
+        merchant_id: { type: integer, format: int64 }
+    VerifyResult:
+      type: object
+      properties:
+        order_id: { type: integer, format: int64 }
+        order_no: { type: string }
+        verified_at: { type: string, format: date-time }
+        order_status: { type: string }
+    VerifyEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/VerifyResult' }
+    AfterSaleDecisionInput:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [AGREE, REJECT] }
+        approved_amount: { type: integer, description: 同意时必填 }
+        reason: { type: string }
+    WithdrawalInput:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: integer, description: 申请金额（分） }
+        bank_account_id: { type: integer, format: int64, nullable: true }
+    Withdrawal:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        withdrawal_no: { type: string }
+        merchant_id: { type: integer, format: int64 }
+        amount: { type: integer }
+        fee: { type: integer }
+        net_amount: { type: integer }
+        status: { type: string, enum: [REQUESTED, APPROVED, PAYING, PAID, REJECTED, FAILED] }
+        requested_at: { type: string, format: date-time }
+        paid_at: { type: string, format: date-time }
+        voucher_no: { type: string }
+        voucher_url: { type: string }
+    WithdrawalEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/Withdrawal' }
+    StatementItem:
+      type: object
+      properties:
+        order_no: { type: string }
+        order_completed_at: { type: string, format: date-time }
+        due_at: { type: string, format: date-time }
+        product_amount: { type: integer }
+        delivery_fee: { type: integer }
+        commission_rate: { type: number }
+        commission_amount: { type: integer }
+        refund_amount: { type: integer }
+        net_amount: { type: integer }
+        status: { type: string, enum: [PENDING, FROZEN, SETTLED, CANCELLED] }
+    StatementPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/StatementItem' }
+                page: { $ref: '#/components/schemas/Page' }
+    AuditDecisionInput:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [APPROVE, REJECT] }
+        reason: { type: string, description: 驳回必填 }
+    MerchantStatusInput:
+      type: object
+      required: [status, reason]
+      properties:
+        status: { type: string, enum: [ACTIVE, SUSPENDED, CLOSED] }
+        reason: { type: string }
+    FreezeInput:
+      type: object
+      required: [action, reason]
+      properties:
+        action: { type: string, enum: [FREEZE, UNFREEZE] }
+        reason: { type: string }
+    ArbitrationRuleInput:
+      type: object
+      required: [ruling, liability]
+      properties:
+        ruling: { type: string }
+        liability: { type: string, enum: [MERCHANT, USER, PLATFORM, SHARED] }
+        refund_amount: { type: integer, description: 裁定退款金额（分），可为 0 }
+    RuleVersionInput:
+      type: object
+      required: [snapshot]
+      properties:
+        snapshot: { type: object, additionalProperties: true }
+        effective_at: { type: string, format: date-time }
+        remark: { type: string }
+    PayoutInput:
+      type: object
+      required: [voucher_no, voucher_url, paid_at]
+      properties:
+        voucher_no: { type: string }
+        voucher_url: { type: string, format: uri }
+        paid_at: { type: string, format: date-time }
+    SettlementBatch:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        batch_no: { type: string }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        status: { type: string, enum: [PENDING, PUBLISHED, CLOSED] }
+        total_amount: { type: integer }
+        commission_amount: { type: integer }
+        net_amount: { type: integer }
+        items_count: { type: integer }
+        published_at: { type: string, format: date-time }
+    SettlementBatchPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/SettlementBatch' }
+                page: { $ref: '#/components/schemas/Page' }
+    SettlementBatchEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/SettlementBatch' }
+    Reconciliation:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              status: { type: string, enum: [OK, DIFF, PENDING] }
+              diff_count: { type: integer }
+              diff_amount: { type: integer }
+        unresolved_count: { type: integer }
+    PaymentConfig:
+      type: object
+      properties:
+        channel: { type: string, enum: [WECHAT_MINI, WECHAT_H5] }
+        merchant_no: { type: string }
+        app_id: { type: string }
+        cert_serial_no: { type: string }
+        notify_url: { type: string, format: uri }
+        enabled: { type: boolean }
+        updated_by_name: { type: string }
+        updated_at: { type: string, format: date-time }
+    PaymentConfigInput:
+      type: object
+      required: [merchant_no, api_v3_key, private_key, platform_cert]
+      properties:
+        merchant_no: { type: string }
+        app_id: { type: string }
+        api_v3_key: { type: string, description: 写入后仅返回脱敏标记 }
+        cert_serial_no: { type: string }
+        private_key: { type: string, description: PEM 文本 }
+        platform_cert: { type: string, description: PEM 文本 }
+        notify_url: { type: string, format: uri }
+        enabled: { type: boolean }
+    PaymentConfigEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/PaymentConfig' }
+    OperationLog:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        operator_name: { type: string }
+        action: { type: string }
+        biz_type: { type: string }
+        biz_id: { type: integer, format: int64 }
+        reason: { type: string }
+        created_at: { type: string, format: date-time }
+    OperationLogPageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/OperationLog' }
+                page: { $ref: '#/components/schemas/Page' }
+    CallbackAck:
+      type: object
+      properties:
+        code: { type: string, enum: [SUCCESS, FAIL] }
+        message: { type: string }
+paths:
+  /api/v1/health:
+    get:
+      tags: [auth]
+      operationId: health
+      summary: 健康检查
+      security: []
+      x-status: implemented
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '503':
+          description: 依赖不可用
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/accounts/auth/token:
+    post:
+      tags: [auth]
+      operationId: loginByPassword
+      summary: 平台后台手机号密码登录
+      security: []
+      x-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, password]
+              properties:
+                phone: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/accounts/auth/refresh:
+    post:
+      tags: [auth]
+      operationId: refreshToken
+      summary: 刷新 Token
+      security: []
+      x-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh]
+              properties:
+                refresh: { type: string }
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/auth/wechat/login:
+    post:
+      tags: [auth]
+      operationId: loginByWechat
+      summary: 小程序登录（code 换 openid/unionid）
+      security: []
+      x-status: planned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WechatLoginInput' }
+      responses:
+        '200':
+          description: 登录成功；按 unionid 合并账户
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenEnvelope' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/auth/h5/sms:
+    post:
+      tags: [auth]
+      operationId: loginBySms
+      summary: H5 手机号验证码登录
+      security: []
+      x-status: planned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SmsLoginInput' }
+      responses:
+        '200':
+          description: 登录成功；同手机号绑定 unionid
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenEnvelope' }
+        '429':
+          description: 验证码发送/校验过于频繁
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/auth/sms/send:
+    post:
+      tags: [auth]
+      operationId: sendSmsCode
+      summary: 发送短信验证码（服务商 TBD）
+      security: []
+      x-status: planned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SmsSendInput' }
+      responses:
+        '200':
+          description: 已发送
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '429':
+          description: 触发限流
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/accounts/me:
+    get:
+      tags: [auth]
+      operationId: getMe
+      summary: 当前用户与商户角色
+      x-status: implemented
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/addresses:
+    get:
+      tags: [consumer]
+      operationId: listAddresses
+      summary: 收货地址列表
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AddressListEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [consumer]
+      operationId: createAddress
+      summary: 新增收货地址
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddressInput' }
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AddressEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/addresses/{id}:
+    patch:
+      tags: [consumer]
+      operationId: updateAddress
+      summary: 修改收货地址
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddressInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AddressEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [consumer]
+      operationId: deleteAddress
+      summary: 删除收货地址
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204':
+          description: 已删除
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/stores/nearby:
+    get:
+      tags: [consumer]
+      operationId: listNearbyStores
+      summary: 附近门店（按距离排序，只返回营业中）
+      x-status: planned
+      security: []
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, format: double }
+        - name: lng
+          in: query
+          required: true
+          schema: { type: number, format: double }
+        - name: radius
+          in: query
+          schema: { type: integer, default: 3000, description: 米 }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StorePageEnvelope' }
+  /api/v1/stores/{id}:
+    get:
+      tags: [consumer]
+      operationId: getStore
+      summary: 门店详情与在售商品
+      x-status: planned
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StoreEnvelope' }
+        '404':
+          description: 门店不存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/categories:
+    get:
+      tags: [consumer]
+      operationId: listCategories
+      summary: 类目列表（仅启用）
+      x-status: implemented
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CategoryListEnvelope' }
+  /api/v1/products:
+    get:
+      tags: [consumer]
+      operationId: listProducts
+      summary: 商品列表（在售）
+      x-status: implemented
+      security: []
+      parameters:
+        - name: merchant
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: category
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: type
+          in: query
+          schema: { type: string, enum: [PHYSICAL, SERVICE] }
+        - name: search
+          in: query
+          schema: { type: string }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductPageEnvelope' }
+  /api/v1/products/{id}:
+    get:
+      tags: [consumer]
+      operationId: getProduct
+      summary: 商品/服务详情（有效期、退款规则、可约时段）
+      x-status: implemented
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductEnvelope' }
+        '404':
+          description: 商品不存在或已下架
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/cart:
+    get:
+      tags: [cart]
+      operationId: getCart
+      summary: 当前用户的购物车（单店）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CartEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/cart/items:
+    post:
+      tags: [cart]
+      operationId: addCartItem
+      summary: 加入购物车（同商品同规格累加）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CartItemInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CartEnvelope' }
+        '409':
+          description: 跨店购物车或库存不足
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/cart/items/{id}:
+    patch:
+      tags: [cart]
+      operationId: updateCartItem
+      summary: 修改数量或选中状态
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CartItemPatch' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CartEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: 库存不足
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    delete:
+      tags: [cart]
+      operationId: deleteCartItem
+      summary: 移出购物车
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204':
+          description: 已删除
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/orders:
+    post:
+      tags: [order]
+      operationId: createOrder
+      summary: 创建订单（服务端定价，预占库存/时段）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderCreateInput' }
+      responses:
+        '201':
+          description: 订单已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderEnvelope' }
+        '409':
+          description: STOCK_NOT_ENOUGH / SLOT_FULL / IDEMPOTENCY_CONFLICT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    get:
+      tags: [order]
+      operationId: listMyOrders
+      summary: 我的订单
+      x-status: implemented
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: merchant
+          in: query
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderPageEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/orders/{id}:
+    get:
+      tags: [order]
+      operationId: getMyOrder
+      summary: 订单详情（含时间轴、核销码、物流/预约）
+      x-status: implemented
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: 订单不存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/orders/{id}/pay:
+    post:
+      tags: [order]
+      operationId: payOrder
+      summary: 发起微信支付（返回 prepay_id，15 分钟有效）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PayInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PayEnvelope' }
+        '409':
+          description: ORDER_EXPIRED / 订单状态不允许支付
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/orders/{id}/cancel:
+    post:
+      tags: [order]
+      operationId: cancelOrder
+      summary: 取消待支付/待接单订单（触发退款或关闭）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CancelInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderEnvelope' }
+        '409':
+          description: 订单状态不允许取消
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/orders/{id}/review:
+    post:
+      tags: [order]
+      operationId: reviewOrder
+      summary: 提交评价（完成后 7 天内，一单一评）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewInput' }
+      responses:
+        '201':
+          description: 已提交
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '409':
+          description: 已评价或超出评价窗口
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/after-sales:
+    post:
+      tags: [aftersale]
+      operationId: createAfterSale
+      summary: 申请售后（冻结结算项）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AfterSaleInput' }
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AfterSaleEnvelope' }
+        '409':
+          description: AFTER_SALE_NOT_ALLOWED / REFUND_AMOUNT_EXCEEDED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/after-sales/{id}:
+    get:
+      tags: [aftersale]
+      operationId: getAfterSale
+      summary: 售后进度（商户处理、仲裁、退款）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AfterSaleEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/merchant/apply:
+    post:
+      tags: [merchant]
+      operationId: applyMerchant
+      summary: 提交入驻资料（驳回可重提，保留历史版本）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MerchantApplyInput' }
+      responses:
+        '201':
+          description: 已提交，进入审核
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '409':
+          description: 已有待审核申请
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/merchant/profile:
+    get:
+      tags: [merchant]
+      operationId: getMerchantProfile
+      summary: 门店与账户信息（店员不可见金额）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantProfileEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/merchant/products:
+    post:
+      tags: [merchant]
+      operationId: createMerchantProduct
+      summary: 发布商品/服务（提交审核）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductInput' }
+      responses:
+        '201':
+          description: 已提交审核
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/merchant/products/{id}:
+    put:
+      tags: [merchant]
+      operationId: updateMerchantProduct
+      summary: 编辑商品（版本校验；价格/主图/类目变更重审）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductEnvelope' }
+        '409':
+          description: 版本冲突或状态不允许编辑
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/merchant/orders:
+    get:
+      tags: [merchant]
+      operationId: listMerchantOrders
+      summary: 商户订单列表（仅本店）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: dateFrom
+          in: query
+          schema: { type: string, format: date }
+        - name: dateTo
+          in: query
+          schema: { type: string, format: date }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderPageEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/merchant/orders/{id}/accept:
+    post:
+      tags: [merchant]
+      operationId: acceptOrder
+      summary: 接单（仅待接单可接，超时自动退款）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderEnvelope' }
+        '409':
+          description: ORDER_STATE_CONFLICT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/merchant/orders/{id}/reject:
+    post:
+      tags: [merchant]
+      operationId: rejectOrder
+      summary: 拒单（原因必填，触发全额退款）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RejectInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderEnvelope' }
+        '409':
+          description: ORDER_STATE_CONFLICT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/merchant/orders/{id}/ship:
+    post:
+      tags: [merchant]
+      operationId: shipOrder
+      summary: 发货/备货完成（写物流或提货码）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShipInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderEnvelope' }
+        '409':
+          description: 履约方式不匹配或状态冲突
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/merchant/verify:
+    post:
+      tags: [merchant]
+      operationId: verifyCode
+      summary: 核销（校验门店、状态、有效期、预约窗口）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyInput' }
+      responses:
+        '200':
+          description: 核销成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerifyEnvelope' }
+        '409':
+          description: VERIFY_CODE_INVALID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/merchant/after-sales/{id}/decision:
+    post:
+      tags: [merchant]
+      operationId: decideAfterSale
+      summary: 售后处理（同意/拒绝，超时转仲裁）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AfterSaleDecisionInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AfterSaleEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: 售后状态不允许处理
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/merchant/withdrawals:
+    post:
+      tags: [merchant]
+      operationId: createWithdrawal
+      summary: 申请提现（余额校验，可提现转提现中）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WithdrawalInput' }
+      responses:
+        '201':
+          description: 已申请
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WithdrawalEnvelope' }
+        '409':
+          description: WITHDRAW_BALANCE_NOT_ENOUGH
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/merchant/statements:
+    get:
+      tags: [merchant]
+      operationId: listStatements
+      summary: 账单与流水（按周期，仅本商户）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [PENDING, FROZEN, SETTLED, CANCELLED] }
+        - name: dateFrom
+          in: query
+          schema: { type: string, format: date }
+        - name: dateTo
+          in: query
+          schema: { type: string, format: date }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StatementPageEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/admin/audits:
+    get:
+      tags: [admin]
+      operationId: listAudits
+      summary: 审核任务列表
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: biz_type
+          in: query
+          schema: { type: string, enum: [MERCHANT, PRODUCT, REVIEW, QUALIFICATION] }
+        - name: status
+          in: query
+          schema: { type: string, enum: [PENDING, PROCESSING, APPROVED, REJECTED, CANCELLED] }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/admin/audits/{id}/decision:
+    post:
+      tags: [admin]
+      operationId: decideAudit
+      summary: 审核通过/驳回（写操作日志）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuditDecisionInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: 任务已被处理
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/admin/merchants/{id}/status:
+    post:
+      tags: [admin]
+      operationId: changeMerchantStatus
+      summary: 停业/恢复/封禁（原因必填）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MerchantStatusInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '409':
+          description: 商户状态迁移非法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/admin/orders:
+    get:
+      tags: [admin]
+      operationId: listAdminOrders
+      summary: 平台订单查询（多条件筛选，数据脱敏）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: merchant_id
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: order_no
+          in: query
+          schema: { type: string }
+        - name: dateFrom
+          in: query
+          schema: { type: string, format: date }
+        - name: dateTo
+          in: query
+          schema: { type: string, format: date }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderPageEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/admin/orders/{id}/freeze:
+    post:
+      tags: [admin]
+      operationId: freezeOrderSettlement
+      summary: 冻结结算（只冻结资金，不影响履约）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FreezeInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '409':
+          description: 结算项不存在或已结算
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/admin/arbitrations/{id}/rule:
+    post:
+      tags: [admin]
+      operationId: ruleArbitration
+      summary: 仲裁判定（责任方必填，执行退款）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ArbitrationRuleInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AfterSaleEnvelope' }
+        '409':
+          description: 仲裁状态不允许裁定
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/admin/rules:
+    put:
+      tags: [admin]
+      operationId: publishRuleVersion
+      summary: 发布规则版本（版本化，影响新订单）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RuleVersionInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/admin/settlements/{batch_id}/publish:
+    post:
+      tags: [admin]
+      operationId: publishSettlementBatch
+      summary: 发布结算批次（借贷记账，幂等）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettlementBatchEnvelope' }
+        '409':
+          description: SETTLEMENT_NOT_DUE / 批次状态非法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/admin/settlements:
+    get:
+      tags: [admin]
+      operationId: listSettlementBatches
+      summary: 结算批次列表
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [PENDING, PUBLISHED, CLOSED] }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettlementBatchPageEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/admin/withdrawals/{id}/payout:
+    post:
+      tags: [admin]
+      operationId: payoutWithdrawal
+      summary: 确认线下打款（回填凭证，幂等）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PayoutInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WithdrawalEnvelope' }
+        '409':
+          description: 提现单状态非法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/admin/withdrawals/{id}/reject:
+    post:
+      tags: [admin]
+      operationId: rejectWithdrawal
+      summary: 驳回提现（退回可提现）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RejectInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WithdrawalEnvelope' }
+        '409':
+          description: 提现单状态非法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/admin/reconciliation:
+    get:
+      tags: [admin]
+      operationId: getReconciliation
+      summary: 对账结果（差异与处理状态）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Reconciliation' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/admin/logs:
+    get:
+      tags: [admin]
+      operationId: listOperationLogs
+      summary: 操作日志（按类型/操作人/对象筛选）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: biz_type
+          in: query
+          schema: { type: string }
+        - name: operator
+          in: query
+          schema: { type: string }
+        - name: biz_id
+          in: query
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OperationLogPageEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/admin/payment-configs/{channel}:
+    get:
+      tags: [admin]
+      operationId: getPaymentConfig
+      summary: 读取平台支付配置（密钥脱敏）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          schema: { type: string, enum: [WECHAT_MINI, WECHAT_H5] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentConfigEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [admin]
+      operationId: updatePaymentConfig
+      summary: 配置商户号、APIv3 密钥与证书（加密存储）
+      x-status: planned
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          schema: { type: string, enum: [WECHAT_MINI, WECHAT_H5] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentConfigInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentConfigEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/callback/wechat/pay:
+    post:
+      tags: [callback]
+      operationId: wechatPayCallback
+      summary: 微信支付回调（验签、金额校验、幂等记账）
+      description: 处理失败返回非 200，微信会重试；必须承受重复回调。
+      x-status: planned
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: 微信支付 V3 加密回调原文
+      responses:
+        '200':
+          description: 处理成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CallbackAck' }
+        '400':
+          description: 验签失败或金额不一致（PAY_AMOUNT_MISMATCH）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  /api/v1/callback/wechat/refund:
+    post:
+      tags: [callback]
+      operationId: wechatRefundCallback
+      summary: 微信退款回调（按 refund_no 幂等，资金冲回）
+      description: 失败保留原因并告警，不能吞掉。
+      x-status: planned
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: 微信退款 V3 加密回调原文
+      responses:
+        '200':
+          description: 处理成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CallbackAck' }
+        '400':
+          description: 验签失败或退款单不存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }

@@ -603,6 +603,7 @@
             <tr><td>删除</td><td>业务记录只改状态，不物理删除；审计与资金流水永久保留。</td></tr>
             <tr><td>审计字段</td><td>created_at、updated_at 必有；资金与治理表增加 created_by / updated_by / reason。</td></tr>
             <tr><td>快照</td><td>订单保存商品、价格、佣金率快照；商户保存结算账户快照；规则变更不影响已支付订单。</td></tr>
+            <tr><td>敏感字段</td><td>字段级加密（AES-256-GCM）：收货人、联系电话、详细地址、银行卡、支付密钥与证书；密文列不可等值查询，登录手机号需另建盲索引（方案 TBD）。</td></tr>
           </tbody>
         </table>
       </div>
@@ -612,6 +613,7 @@
         <div class="domain-card"><h4>用户与商户</h4>
           <span class="entity">app_user <em>用户</em></span>
           <span class="entity">user_identity <em>多端身份</em></span>
+          <span class="entity">user_address <em>收货地址</em></span>
           <span class="entity">merchant <em>商户/门店</em></span>
           <span class="entity">merchant_staff <em>店长/店员</em></span>
         </div>
@@ -627,6 +629,7 @@
           <span class="entity">payment_order <em>支付单</em></span>
           <span class="entity">refund_order <em>退款单</em></span>
           <span class="entity">order_status_log <em>状态日志</em></span>
+          <span class="entity">cart_item <em>单店购物车</em></span>
         </div>
         <div class="domain-card"><h4>履约与售后</h4>
           <span class="entity">order_delivery <em>配送/自提</em></span>
@@ -641,6 +644,7 @@
           <span class="entity">ledger_entry <em>借贷分录</em></span>
           <span class="entity">settlement_item <em>结算项</em></span>
           <span class="entity">withdrawal_order <em>提现单</em></span>
+          <span class="entity">platform_payment_config <em>平台支付配置</em></span>
         </div>
         <div class="domain-card"><h4>治理与内容</h4>
           <span class="entity">rule_version <em>规则版本</em></span>
@@ -664,6 +668,7 @@
             <tr><td colspan="4" style="background:#F2EDE0;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)">用户与商户</td></tr>
             <tr><td class="mono">app_user</td><td>用户主档</td><td>union_id, phone, nickname, status</td><td>unique(union_id)；index(phone)</td></tr>
             <tr><td class="mono">user_identity</td><td>小程序/H5 身份</td><td>user_id, channel, open_id, union_id</td><td>unique(channel, open_id)</td></tr>
+            <tr><td class="mono">user_address</td><td>收货地址簿</td><td>user_id, receiver_name/phone/detail（加密）, province, city, district, is_default, tag</td><td>index(user, is_default)</td></tr>
             <tr><td class="mono">merchant</td><td>商户=门店</td><td>merchant_no, name, category_id, lng/lat, status, commission_rate（商户覆盖，空则继承类目）, bank_info</td><td>unique(merchant_no)；index(category_id, status)</td></tr>
             <tr><td class="mono">merchant_staff</td><td>店长/店员</td><td>merchant_id, user_id, role, status</td><td>unique(merchant_id, user_id)</td></tr>
             <tr><td class="mono">merchant_qualification</td><td>资质材料</td><td>merchant_id, type, file_url, expire_at, audit_status</td><td>index(merchant_id, type)</td></tr>
@@ -677,6 +682,7 @@
             <tr><td class="mono">order</td><td>订单主表</td><td>order_no, user_id, merchant_id, type, status, amounts, commission snapshot, timestamps</td><td>unique(order_no)；index(user_id, created_at)；index(merchant_id, status)</td></tr>
             <tr><td class="mono">order_item</td><td>商品行</td><td>order_id, product_id, sku_id, snapshot_json, price, quantity, amount, refund_amount</td><td>index(order_id)</td></tr>
             <tr><td class="mono">order_status_log</td><td>状态迁移日志</td><td>order_id, from_status, to_status, event, operator, reason</td><td>index(order_id, created_at)</td></tr>
+            <tr><td class="mono">cart_item</td><td>单店购物车</td><td>user_id, merchant_id, product_id, sku_id, quantity, selected</td><td>unique(user, product, sku)；index(user, merchant)</td></tr>
             <tr><td class="mono">order_delivery</td><td>配送/自提信息</td><td>order_id, type, address_snapshot, logistics_no, pickup_code, shipped_at</td><td>unique(order_id)</td></tr>
             <tr><td class="mono">verify_code</td><td>核销码/提货码</td><td>order_id, merchant_id, code, type, status, valid_to, used_at, used_by</td><td>unique(code)；index(order_id)</td></tr>
             <tr><td class="mono">appointment</td><td>服务预约</td><td>order_id, slot_id, slot_date, start_time, status, confirmed_at</td><td>unique(order_id)</td></tr>
@@ -687,6 +693,7 @@
             <tr><td class="mono">arbitration_case</td><td>仲裁案</td><td>case_no, after_sale_id, amount, status, ruling, liability, deadline_at</td><td>unique(case_no)；index(status)</td></tr>
             <tr><td class="mono">arbitration_evidence</td><td>举证材料</td><td>case_id, party, file_url, note</td><td>index(case_id)</td></tr>
             <tr><td colspan="4" style="background:#F2EDE0;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted)">资金与结算</td></tr>
+            <tr><td class="mono">platform_payment_config</td><td>平台支付配置</td><td>channel, merchant_no, app_id, api_v3_key/private_key/platform_cert（加密）, notify_url, enabled</td><td>unique(channel)</td></tr>
             <tr><td class="mono">merchant_account</td><td>商户虚拟账户</td><td>merchant_id, pending, frozen, available, withdrawing, version</td><td>unique(merchant_id)</td></tr>
             <tr><td class="mono">ledger_transaction</td><td>记账事务</td><td>txn_no, biz_type, biz_id, event_type, idempotency_key, total_amount</td><td>unique(idempotency_key)；unique(txn_no)</td></tr>
             <tr><td class="mono">ledger_entry</td><td>借贷分录</td><td>txn_id, account_type, account_id, direction, amount, balance_after</td><td>index(account_type, account_id, created_at)</td></tr>
@@ -1035,6 +1042,11 @@
             <tr><td>追踪</td><td>每个请求生成 traceId，写入日志并返回响应头；支付回调、退款回调同样记录 traceId。</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="callout teal">
+        <span class="label">契约文件</span>
+        P0 目标契约已落盘：<span class="code">contracts/p0-api.yaml</span>，覆盖消费者、商户、平台与微信回调共 56 个操作；<span class="code">contracts/openapi.yaml</span> 为已实现接口快照，由代码自动生成并在 CI 校验差异。
       </div>
 
       <h3 class="sub">7.2 消费者接口</h3>

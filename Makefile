@@ -34,8 +34,11 @@ schema-check:
 	cd backend && $(PY) manage.py spectacular --file /tmp/alliance-openapi.yaml --validate
 	diff -u $(ROOT)/contracts/openapi.yaml /tmp/alliance-openapi.yaml
 
+contract-check:
+	$(PY) scripts/validate_contract.py
+
 audit:
 	cd backend && $(PY) manage.py audit_ledger
 
-verify: lint check schema-check test
+verify: lint check schema-check contract-check test
 	@echo "verify passed"

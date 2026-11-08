@@ -7,6 +7,7 @@
 from django.conf import settings
 from django.db import models
 
+from apps.common.fields import EncryptedJSONField
 from apps.common.models import TimeStampedModel
 
 
@@ -46,7 +47,7 @@ class Merchant(TimeStampedModel):
     settlement_cycle_days = models.PositiveSmallIntegerField(
         "结算周期（天）", default=settings.DEFAULT_SETTLEMENT_CYCLE_DAYS
     )
-    bank_info = models.JSONField("收款银行信息（脱敏存储）", default=dict, blank=True)
+    bank_info = EncryptedJSONField("收款银行信息（加密存储，T9）", default=dict, blank=True)
     opened_at = models.DateTimeField("开店时间", null=True, blank=True)
 
     class Meta:
