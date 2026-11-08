@@ -45,6 +45,15 @@
 | `SETTLEMENT_NOT_DUE` | 409 | 结算项未到 `due_at` | 结算服务 |
 | `IDEMPOTENCY_CONFLICT` | 409 | 幂等键复用但请求体不一致 | 幂等中间件 |
 | `PAY_AMOUNT_MISMATCH` | 409 | 回调金额与支付单不一致 | 支付回调 |
+| `PRODUCT_NOT_AVAILABLE` | 409 | 商品不存在或已下架 | 购物车/下单 |
+| `SKU_NOT_FOUND` | 409 | 规格不存在或不属于商品 | 购物车/下单 |
+| `CROSS_STORE_CART` | 409 | 跨店购物车 | 购物车 |
+| `ACCOUNT_UNION_CONFLICT` | 409 | 手机号账号已绑定其他微信身份 | 短信登录 |
+| `ACCOUNT_DISABLED` | 403 | 账号被禁用 | 登录 |
+| `SMS_CODE_INVALID` | 422 | 验证码错误或已过期 | 短信登录 |
+| `WECHAT_NOT_CONFIGURED` | 503 | 真实微信登录未接入 | 认证适配层 |
+| `SMS_NOT_CONFIGURED` | 503 | 短信服务商未确定 | 短信适配层 |
+| `NOT_FOUND` | 404 | 资源不存在或无权访问 | 通用 |
 | `LEDGER_UNBALANCED` | 409 | 借贷不平 | `UnbalancedTransaction` |
 | `LEDGER_NEGATIVE_BALANCE` | 409 | 余额不足（pending/frozen/withdrawing） | `NegativeBalance` |
 | `RATE_LIMITED` | 429 | 触发限流 | 限流中间件 |

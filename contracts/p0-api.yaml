@@ -131,6 +131,17 @@ components:
       properties:
         phone: { type: string }
         scene: { type: string, enum: [LOGIN, ORDER_NOTICE] }
+    SmsSendResult:
+      type: object
+      properties:
+        expires_in: { type: integer, description: 验证码有效期（秒） }
+        debug_code: { type: string, nullable: true, description: 仅 Mock 模式返回，生产环境为空 }
+    SmsSendResultEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/SmsSendResult' }
     Me:
       type: object
       properties:
@@ -847,7 +858,7 @@ components:
         code: { type: string, enum: [SUCCESS, FAIL] }
         message: { type: string }
 paths:
-  /api/v1/health:
+  /api/v1/health/:
     get:
       tags: [auth]
       operationId: health
@@ -865,7 +876,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/accounts/auth/token:
+  /api/v1/accounts/auth/token/:
     post:
       tags: [auth]
       operationId: loginByPassword
@@ -890,7 +901,7 @@ paths:
               schema: { $ref: '#/components/schemas/TokenEnvelope' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /api/v1/accounts/auth/refresh:
+  /api/v1/accounts/auth/refresh/:
     post:
       tags: [auth]
       operationId: refreshToken
@@ -913,13 +924,13 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/TokenEnvelope' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-  /api/v1/auth/wechat/login:
+  /api/v1/auth/wechat/login/:
     post:
       tags: [auth]
       operationId: loginByWechat
       summary: 小程序登录（code 换 openid/unionid）
       security: []
-      x-status: planned
+      x-status: implemented
       requestBody:
         required: true
         content:
@@ -932,13 +943,13 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/TokenEnvelope' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /api/v1/auth/h5/sms:
+  /api/v1/auth/h5/sms/:
     post:
       tags: [auth]
       operationId: loginBySms
       summary: H5 手机号验证码登录
       security: []
-      x-status: planned
+      x-status: implemented
       requestBody:
         required: true
         content:
@@ -956,13 +967,13 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /api/v1/auth/sms/send:
+  /api/v1/auth/sms/send/:
     post:
       tags: [auth]
       operationId: sendSmsCode
       summary: 发送短信验证码（服务商 TBD）
       security: []
-      x-status: planned
+      x-status: implemented
       requestBody:
         required: true
         content:
@@ -973,13 +984,13 @@ paths:
           description: 已发送
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Envelope' }
+              schema: { $ref: '#/components/schemas/SmsSendResultEnvelope' }
         '429':
           description: 触发限流
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/accounts/me:
+  /api/v1/accounts/me/:
     get:
       tags: [auth]
       operationId: getMe
@@ -993,12 +1004,12 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/MeEnvelope' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-  /api/v1/addresses:
+  /api/v1/addresses/:
     get:
       tags: [consumer]
       operationId: listAddresses
       summary: 收货地址列表
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       responses:
         '200':
@@ -1026,12 +1037,12 @@ paths:
               schema: { $ref: '#/components/schemas/AddressEnvelope' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /api/v1/addresses/{id}:
+  /api/v1/addresses/{id}/:
     patch:
       tags: [consumer]
       operationId: updateAddress
       summary: 修改收货地址
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       parameters:
         - name: id
@@ -1055,7 +1066,7 @@ paths:
       tags: [consumer]
       operationId: deleteAddress
       summary: 删除收货地址
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       parameters:
         - name: id
@@ -1066,7 +1077,7 @@ paths:
         '204':
           description: 已删除
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/stores/nearby:
+  /api/v1/stores/nearby/:
     get:
       tags: [consumer]
       operationId: listNearbyStores
@@ -1093,7 +1104,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/StorePageEnvelope' }
-  /api/v1/stores/{id}:
+  /api/v1/stores/{id}/:
     get:
       tags: [consumer]
       operationId: getStore
@@ -1116,7 +1127,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/categories:
+  /api/v1/categories/:
     get:
       tags: [consumer]
       operationId: listCategories
@@ -1129,7 +1140,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CategoryListEnvelope' }
-  /api/v1/products:
+  /api/v1/products/:
     get:
       tags: [consumer]
       operationId: listProducts
@@ -1157,7 +1168,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ProductPageEnvelope' }
-  /api/v1/products/{id}:
+  /api/v1/products/{id}/:
     get:
       tags: [consumer]
       operationId: getProduct
@@ -1180,12 +1191,12 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/cart:
+  /api/v1/cart/:
     get:
       tags: [cart]
       operationId: getCart
       summary: 当前用户的购物车（单店）
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       responses:
         '200':
@@ -1194,12 +1205,12 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/CartEnvelope' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-  /api/v1/cart/items:
+  /api/v1/cart/items/:
     post:
       tags: [cart]
       operationId: addCartItem
       summary: 加入购物车（同商品同规格累加）
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -1218,12 +1229,12 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /api/v1/cart/items/{id}:
+  /api/v1/cart/items/{id}/:
     patch:
       tags: [cart]
       operationId: updateCartItem
       summary: 修改数量或选中状态
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       parameters:
         - name: id
@@ -1251,7 +1262,7 @@ paths:
       tags: [cart]
       operationId: deleteCartItem
       summary: 移出购物车
-      x-status: planned
+      x-status: implemented
       security: [{ bearerAuth: [] }]
       parameters:
         - name: id
@@ -1262,7 +1273,7 @@ paths:
         '204':
           description: 已删除
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/orders:
+  /api/v1/orders/:
     post:
       tags: [order]
       operationId: createOrder
@@ -1310,7 +1321,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/OrderPageEnvelope' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-  /api/v1/orders/{id}:
+  /api/v1/orders/{id}/:
     get:
       tags: [order]
       operationId: getMyOrder
@@ -1334,7 +1345,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/orders/{id}/pay:
+  /api/v1/orders/{id}/pay/:
     post:
       tags: [order]
       operationId: payOrder
@@ -1363,7 +1374,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/orders/{id}/cancel:
+  /api/v1/orders/{id}/cancel/:
     post:
       tags: [order]
       operationId: cancelOrder
@@ -1392,7 +1403,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/orders/{id}/review:
+  /api/v1/orders/{id}/review/:
     post:
       tags: [order]
       operationId: reviewOrder
@@ -1420,7 +1431,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/after-sales:
+  /api/v1/after-sales/:
     post:
       tags: [aftersale]
       operationId: createAfterSale
@@ -1446,7 +1457,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /api/v1/after-sales/{id}:
+  /api/v1/after-sales/{id}/:
     get:
       tags: [aftersale]
       operationId: getAfterSale
@@ -1465,7 +1476,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AfterSaleEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/merchant/apply:
+  /api/v1/merchant/apply/:
     post:
       tags: [merchant]
       operationId: applyMerchant
@@ -1490,7 +1501,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/merchant/profile:
+  /api/v1/merchant/profile/:
     get:
       tags: [merchant]
       operationId: getMerchantProfile
@@ -1504,7 +1515,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/MerchantProfileEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/merchant/products:
+  /api/v1/merchant/products/:
     post:
       tags: [merchant]
       operationId: createMerchantProduct
@@ -1524,7 +1535,7 @@ paths:
               schema: { $ref: '#/components/schemas/ProductEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /api/v1/merchant/products/{id}:
+  /api/v1/merchant/products/{id}/:
     put:
       tags: [merchant]
       operationId: updateMerchantProduct
@@ -1552,7 +1563,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/merchant/orders:
+  /api/v1/merchant/orders/:
     get:
       tags: [merchant]
       operationId: listMerchantOrders
@@ -1578,7 +1589,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/OrderPageEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/merchant/orders/{id}/accept:
+  /api/v1/merchant/orders/{id}/accept/:
     post:
       tags: [merchant]
       operationId: acceptOrder
@@ -1602,7 +1613,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/merchant/orders/{id}/reject:
+  /api/v1/merchant/orders/{id}/reject/:
     post:
       tags: [merchant]
       operationId: rejectOrder
@@ -1631,7 +1642,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/merchant/orders/{id}/ship:
+  /api/v1/merchant/orders/{id}/ship/:
     post:
       tags: [merchant]
       operationId: shipOrder
@@ -1660,7 +1671,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/merchant/verify:
+  /api/v1/merchant/verify/:
     post:
       tags: [merchant]
       operationId: verifyCode
@@ -1685,7 +1696,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/merchant/after-sales/{id}/decision:
+  /api/v1/merchant/after-sales/{id}/decision/:
     post:
       tags: [merchant]
       operationId: decideAfterSale
@@ -1715,7 +1726,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/merchant/withdrawals:
+  /api/v1/merchant/withdrawals/:
     post:
       tags: [merchant]
       operationId: createWithdrawal
@@ -1740,7 +1751,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/merchant/statements:
+  /api/v1/merchant/statements/:
     get:
       tags: [merchant]
       operationId: listStatements
@@ -1766,7 +1777,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/StatementPageEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/admin/audits:
+  /api/v1/admin/audits/:
     get:
       tags: [admin]
       operationId: listAudits
@@ -1789,7 +1800,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Envelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/admin/audits/{id}/decision:
+  /api/v1/admin/audits/{id}/decision/:
     post:
       tags: [admin]
       operationId: decideAudit
@@ -1818,7 +1829,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/admin/merchants/{id}/status:
+  /api/v1/admin/merchants/{id}/status/:
     post:
       tags: [admin]
       operationId: changeMerchantStatus
@@ -1846,7 +1857,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/admin/orders:
+  /api/v1/admin/orders/:
     get:
       tags: [admin]
       operationId: listAdminOrders
@@ -1878,7 +1889,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/OrderPageEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/admin/orders/{id}/freeze:
+  /api/v1/admin/orders/{id}/freeze/:
     post:
       tags: [admin]
       operationId: freezeOrderSettlement
@@ -1907,7 +1918,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/admin/arbitrations/{id}/rule:
+  /api/v1/admin/arbitrations/{id}/rule/:
     post:
       tags: [admin]
       operationId: ruleArbitration
@@ -1936,7 +1947,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/admin/rules:
+  /api/v1/admin/rules/:
     put:
       tags: [admin]
       operationId: publishRuleVersion
@@ -1955,7 +1966,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Envelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/admin/settlements/{batch_id}/publish:
+  /api/v1/admin/settlements/{batch_id}/publish/:
     post:
       tags: [admin]
       operationId: publishSettlementBatch
@@ -1979,7 +1990,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/admin/settlements:
+  /api/v1/admin/settlements/:
     get:
       tags: [admin]
       operationId: listSettlementBatches
@@ -1999,7 +2010,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SettlementBatchPageEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/admin/withdrawals/{id}/payout:
+  /api/v1/admin/withdrawals/{id}/payout/:
     post:
       tags: [admin]
       operationId: payoutWithdrawal
@@ -2028,7 +2039,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/admin/withdrawals/{id}/reject:
+  /api/v1/admin/withdrawals/{id}/reject/:
     post:
       tags: [admin]
       operationId: rejectWithdrawal
@@ -2057,7 +2068,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/admin/reconciliation:
+  /api/v1/admin/reconciliation/:
     get:
       tags: [admin]
       operationId: getReconciliation
@@ -2081,7 +2092,7 @@ paths:
                     properties:
                       data: { $ref: '#/components/schemas/Reconciliation' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/admin/logs:
+  /api/v1/admin/logs/:
     get:
       tags: [admin]
       operationId: listOperationLogs
@@ -2107,7 +2118,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/OperationLogPageEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
-  /api/v1/admin/payment-configs/{channel}:
+  /api/v1/admin/payment-configs/{channel}/:
     get:
       tags: [admin]
       operationId: getPaymentConfig
@@ -2150,7 +2161,7 @@ paths:
               schema: { $ref: '#/components/schemas/PaymentConfigEnvelope' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /api/v1/callback/wechat/pay:
+  /api/v1/callback/wechat/pay/:
     post:
       tags: [callback]
       operationId: wechatPayCallback
@@ -2177,7 +2188,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorEnvelope' }
-  /api/v1/callback/wechat/refund:
+  /api/v1/callback/wechat/refund/:
     post:
       tags: [callback]
       operationId: wechatRefundCallback

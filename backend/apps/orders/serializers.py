@@ -102,3 +102,39 @@ class OrderDetailSerializer(OrderListSerializer):
             "appointment",
             "status_logs",
         )
+
+
+class CartItemInputSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField(min_value=1)
+    sku_id = serializers.IntegerField(min_value=1, required=False, allow_null=True, default=None)
+    quantity = serializers.IntegerField(min_value=1, max_value=99, default=1)
+
+
+class CartItemPatchSerializer(serializers.Serializer):
+    quantity = serializers.IntegerField(min_value=1, max_value=99, required=False)
+    selected = serializers.BooleanField(required=False)
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError("至少提供一个可修改字段")
+        return attrs
+
+
+class CartItemSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    merchant_id = serializers.IntegerField()
+    product_id = serializers.IntegerField()
+    sku_id = serializers.IntegerField(allow_null=True)
+    title = serializers.CharField()
+    cover_url = serializers.CharField()
+    spec = serializers.DictField()
+    price_amount = serializers.IntegerField()
+    quantity = serializers.IntegerField()
+    selected = serializers.BooleanField()
+    available_stock = serializers.IntegerField(allow_null=True)
+
+
+class CartSerializer(serializers.Serializer):
+    merchant_id = serializers.IntegerField(allow_null=True)
+    items = CartItemSerializer(many=True)
+    total_amount = serializers.IntegerField()

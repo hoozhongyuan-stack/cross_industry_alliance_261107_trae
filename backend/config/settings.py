@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.common.middleware.RequestIdMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -156,3 +157,9 @@ SIMPLE_JWT = {
 
 # 业务默认值（可在 .env 覆盖；未确认项保持 TBD，不写死规则）
 DEFAULT_SETTLEMENT_CYCLE_DAYS = int(os.getenv("DEFAULT_SETTLEMENT_CYCLE_DAYS", "7"))
+
+# 第三方渠道：M1 先走 Mock，真实联调留到 M5
+WECHAT_MOCK_MODE = env_bool("WECHAT_MOCK_MODE", DEBUG)
+SMS_MOCK_MODE = env_bool("SMS_MOCK_MODE", DEBUG)
+SMS_CODE_TTL_SECONDS = int(os.getenv("SMS_CODE_TTL_SECONDS", "300"))
+SMS_SEND_INTERVAL_SECONDS = int(os.getenv("SMS_SEND_INTERVAL_SECONDS", "60"))

@@ -311,6 +311,251 @@ paths:
               schema:
                 $ref: '#/components/schemas/OrderDetail'
           description: ''
+  /api/v1/cart/:
+    get:
+      operationId: v1_cart_retrieve
+      description: 当前用户购物车（单店）。
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/cart/items/:
+    post:
+      operationId: v1_cart_items_create
+      description: 加入购物车；同商品同规格累加。
+      tags:
+      - cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/cart/items/{id}/:
+    patch:
+      operationId: v1_cart_items_partial_update
+      description: 修改数量/选中状态或移出购物车。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemPatchRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+    delete:
+      operationId: v1_cart_items_destroy
+      description: 修改数量/选中状态或移出购物车。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - cart
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/wechat/login/:
+    post:
+      operationId: v1_auth_wechat_login_create
+      description: 小程序登录：Mock 阶段 code 换 openid/unionid。
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/auth/h5/sms/:
+    post:
+      operationId: v1_auth_h5_sms_create
+      description: H5 手机号验证码登录。
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SmsLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SmsLoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/auth/sms/send/:
+    post:
+      operationId: v1_auth_sms_send_create
+      description: 发送短信验证码；Mock 模式返回 debug_code。
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsSendRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SmsSendRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SmsSendRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/addresses/:
+    get:
+      operationId: v1_addresses_retrieve
+      description: 收货地址列表与新增。
+      tags:
+      - consumer
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+    post:
+      operationId: v1_addresses_create
+      description: 收货地址列表与新增。
+      tags:
+      - consumer
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+  /api/v1/addresses/{id}/:
+    patch:
+      operationId: v1_addresses_partial_update
+      description: 收货地址修改与删除。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - consumer
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeResponse'
+          description: ''
+    delete:
+      operationId: v1_addresses_destroy
+      description: 收货地址修改与删除。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - consumer
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/accounts/auth/token/:
     post:
       operationId: v1_accounts_auth_token_create
@@ -508,6 +753,23 @@ components:
         * `COMPLETED` - 已完成
         * `CANCELLED` - 已取消
         * `NO_SHOW` - 爽约
+    CartItemInputRequest:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          minimum: 1
+        sku_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        quantity:
+          type: integer
+          maximum: 99
+          minimum: 1
+          default: 1
+      required:
+      - product_id
     Category:
       type: object
       properties:
@@ -536,16 +798,22 @@ components:
       required:
       - id
       - name
-    ChannelEnum:
-      enum:
-      - WECHAT_MINI
-      - WECHAT_H5
-      - APP
-      type: string
-      description: |-
-        * `WECHAT_MINI` - 微信小程序
-        * `WECHAT_H5` - 微信 H5
-        * `APP` - APP
+    EnvelopeResponse:
+      type: object
+      description: 仅用于 OpenAPI 快照描述统一响应结构。
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        trace_id:
+          type: string
+        data:
+          nullable: true
+      required:
+      - code
+      - message
+      - trace_id
     FulfillmentStatusEnum:
       enum:
       - NOT_STARTED
@@ -1171,6 +1439,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProductList'
+    PatchedCartItemPatchRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          maximum: 99
+          minimum: 1
+        selected:
+          type: boolean
     Product:
       type: object
       properties:
@@ -1346,6 +1623,45 @@ components:
       description: |-
         * `PHYSICAL` - 实物商品
         * `SERVICE` - 到店服务
+    SceneEnum:
+      enum:
+      - LOGIN
+      - ORDER_NOTICE
+      type: string
+      description: |-
+        * `LOGIN` - LOGIN
+        * `ORDER_NOTICE` - ORDER_NOTICE
+    SmsLoginRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+        sms_code:
+          type: string
+          minLength: 4
+          maxLength: 8
+        union_id:
+          type: string
+          default: ''
+          maxLength: 64
+      required:
+      - phone
+      - sms_code
+    SmsSendRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+        scene:
+          allOf:
+          - $ref: '#/components/schemas/SceneEnum'
+          default: LOGIN
+      required:
+      - phone
     TokenObtainPair:
       type: object
       properties:
@@ -1394,7 +1710,7 @@ components:
       properties:
         channel:
           allOf:
-          - $ref: '#/components/schemas/ChannelEnum'
+          - $ref: '#/components/schemas/UserIdentityChannelEnum'
           title: 渠道
         open_id:
           type: string
@@ -1405,6 +1721,16 @@ components:
       required:
       - channel
       - open_id
+    UserIdentityChannelEnum:
+      enum:
+      - WECHAT_MINI
+      - WECHAT_H5
+      - APP
+      type: string
+      description: |-
+        * `WECHAT_MINI` - 微信小程序
+        * `WECHAT_H5` - 微信 H5
+        * `APP` - APP
     VerifyCode:
       type: object
       properties:
@@ -1461,6 +1787,27 @@ components:
       description: |-
         * `VERIFY` - 核销码
         * `PICKUP` - 提货码
+    WechatLoginChannelEnum:
+      enum:
+      - WECHAT_MINI
+      - WECHAT_H5
+      type: string
+      description: |-
+        * `WECHAT_MINI` - WECHAT_MINI
+        * `WECHAT_H5` - WECHAT_H5
+    WechatLoginRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/WechatLoginChannelEnum'
+          default: WECHAT_MINI
+      required:
+      - code
   securitySchemes:
     cookieAuth:
       type: apiKey
